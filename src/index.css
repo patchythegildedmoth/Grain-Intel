@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-corn: #EAB308;
+  --color-soybeans: #22C55E;
+  --color-wheat: #F59E0B;
+  --color-barley: #3B82F6;
+  --color-milo: #A855F7;
+  --color-oats: #14B8A6;
+  --color-soybean-meal: #EC4899;
+  --color-cottonseed: #F97316;
+  --color-commodity-other: #6B7280;
+}
+
+html {
+  font-family: Inter, system-ui, -apple-system, sans-serif;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .dark {
+    color-scheme: light !important;
+  }
+  body, .dark body {
+    background: white !important;
+    color: black !important;
+  }
+  aside {
+    display: none !important;
+  }
+  main {
+    margin-left: 0 !important;
+    max-width: 100% !important;
+  }
+  header {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+  table {
+    font-size: 10px !important;
+  }
+}
