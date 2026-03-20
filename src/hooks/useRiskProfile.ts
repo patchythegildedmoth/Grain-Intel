@@ -19,6 +19,7 @@ export interface FuturesMonthDetail {
   bushels: number;
   contractCount: number;
   isNearby: boolean;
+  freightMix: string;
 }
 
 export interface CommodityRiskProfile {
@@ -92,6 +93,7 @@ export function useRiskProfile() {
       // Futures month detail for Basis and HTA contracts
       const detailContracts = group.filter((c) => c.pricingType === 'Basis' || c.pricingType === 'HTA');
       const fmMap = new Map<string, FuturesMonthDetail>();
+      const fmFreight = new Map<string, Map<string, number>>();
       for (const c of detailContracts) {
         const key = `${c.futureMonthSortKey}|||${c.pricingType}`;
         if (!fmMap.has(key)) {
@@ -102,11 +104,28 @@ export function useRiskProfile() {
             bushels: 0,
             contractCount: 0,
             isNearby: nearbyKeys.has(c.futureMonthSortKey.substring(0, 7)),
+            freightMix: '',
           });
+          fmFreight.set(key, new Map());
         }
         const entry = fmMap.get(key)!;
         entry.bushels += c.balance;
         entry.contractCount++;
+        const ft = c.freightTerm || 'Unknown';
+        const ftMap = fmFreight.get(key)!;
+        ftMap.set(ft, (ftMap.get(ft) || 0) + c.balance);
+      }
+      // Compute freight mix labels
+      for (const [key, detail] of fmMap) {
+        const ftMap = fmFreight.get(key)!;
+        const entries = [...ftMap.entries()].sort((a, b) => b[1] - a[1]);
+        if (entries.length === 1) {
+          detail.freightMix = entries[0][0];
+        } else {
+          detail.freightMix = entries
+            .map(([ft, bu]) => `${ft} ${Math.round((bu / detail.bushels) * 100)}%`)
+            .join(', ');
+        }
       }
       const futuresMonthDetail = [...fmMap.values()]
         .sort((a, b) => a.futureMonthSortKey.localeCompare(b.futureMonthSortKey));

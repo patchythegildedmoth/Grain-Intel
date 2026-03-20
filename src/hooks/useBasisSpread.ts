@@ -5,6 +5,13 @@ import { sortByCommodityOrder } from '../utils/commodityColors';
 import { THRESHOLDS } from '../utils/alerts';
 import type { AlertLevel } from '../utils/alerts';
 
+export interface FreightBasisBreakdown {
+  freightTerm: string;
+  avgBasis: number | null;
+  bushels: number;
+  contractCount: number;
+}
+
 export interface SpreadRow {
   commodity: string;
   futureMonthShort: string;
@@ -15,6 +22,8 @@ export interface SpreadRow {
   buyBushels: number;
   sellBushels: number;
   contractCount: number;
+  buyByFreight: FreightBasisBreakdown[];
+  sellByFreight: FreightBasisBreakdown[];
 }
 
 export interface HistoricalSpread {
@@ -25,6 +34,8 @@ export interface HistoricalSpread {
   grossSpread: number | null;
   completedBushels: number;
   contractCount: number;
+  buyByFreight: FreightBasisBreakdown[];
+  sellByFreight: FreightBasisBreakdown[];
 }
 
 export interface MonthlyTrend {
@@ -46,6 +57,30 @@ export interface CommoditySpreadSummary {
   historicalSpreads: HistoricalSpread[];
   monthlyTrend: MonthlyTrend[];
   alerts: { level: AlertLevel; message: string }[];
+}
+
+function computeFreightBreakdown(
+  contracts: { freightTerm: string | null; basis: number | null; pricedQty: number; balance: number }[],
+): FreightBasisBreakdown[] {
+  const map = new Map<string, { totalBasis: number; totalWeight: number; count: number }>();
+  for (const c of contracts) {
+    const ft = c.freightTerm || 'Unknown';
+    if (!map.has(ft)) map.set(ft, { totalBasis: 0, totalWeight: 0, count: 0 });
+    const entry = map.get(ft)!;
+    entry.count++;
+    if (c.basis !== null && c.pricedQty > 0) {
+      entry.totalBasis += c.basis * c.pricedQty;
+      entry.totalWeight += c.pricedQty;
+    }
+  }
+  return [...map.entries()]
+    .map(([freightTerm, data]) => ({
+      freightTerm,
+      avgBasis: data.totalWeight > 0 ? data.totalBasis / data.totalWeight : null,
+      bushels: contracts.filter((c) => (c.freightTerm || 'Unknown') === freightTerm).reduce((s, c) => s + c.balance, 0),
+      contractCount: data.count,
+    }))
+    .sort((a, b) => b.bushels - a.bushels);
 }
 
 export function useBasisSpread() {
@@ -82,6 +117,8 @@ export function useBasisSpread() {
         buyBushels: purchases.reduce((s, c) => s + c.balance, 0),
         sellBushels: sales.reduce((s, c) => s + c.balance, 0),
         contractCount: group.length,
+        buyByFreight: computeFreightBreakdown(purchases),
+        sellByFreight: computeFreightBreakdown(sales),
       };
 
       if (!spreadsByCommodity.has(commodity)) spreadsByCommodity.set(commodity, []);
@@ -114,6 +151,8 @@ export function useBasisSpread() {
         grossSpread: avgBuyBasis !== null && avgSellBasis !== null ? avgSellBasis - avgBuyBasis : null,
         completedBushels: group.reduce((s, c) => s + c.pricedQty, 0),
         contractCount: group.length,
+        buyByFreight: computeFreightBreakdown(purchases),
+        sellByFreight: computeFreightBreakdown(sales),
       };
 
       if (!historicalByCommodity.has(commodity)) historicalByCommodity.set(commodity, []);

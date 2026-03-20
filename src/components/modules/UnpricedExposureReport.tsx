@@ -65,6 +65,10 @@ const detailColumns = [
     cell: (info) => formatBasis(info.getValue()),
   }),
   detailCol.accessor('futureMonthShort', { header: 'Futures Month' }),
+  detailCol.accessor('freightTerm', {
+    header: 'Freight',
+    cell: (info) => info.getValue() || '—',
+  }),
   detailCol.accessor('endDate', {
     header: 'End Date',
     cell: (info) => formatDate(info.getValue()),

@@ -36,6 +36,7 @@ const fmColumns = [
     header: 'Bushels',
     cell: (info) => formatBushelsShort(info.getValue()),
   }),
+  fmCol.accessor('freightMix', { header: 'Freight' }),
   fmCol.accessor('contractCount', { header: '# Contracts' }),
   fmCol.display({
     id: 'status',

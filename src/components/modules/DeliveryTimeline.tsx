@@ -31,6 +31,26 @@ const monthColumns = [
       );
     },
   }),
+  monthCol.display({
+    id: 'freightBreakdown',
+    header: 'Freight Mix',
+    cell: (info) => {
+      const fb = info.row.original.freightBreakdown;
+      if (fb.length === 0) return '—';
+      return (
+        <div className="text-xs space-y-0.5">
+          {fb.map((f) => (
+            <div key={f.term}>
+              <span className="font-medium">{f.term}:</span>{' '}
+              <span className="text-green-600 dark:text-green-400">{formatBushelsShort(f.inbound)}</span>
+              {' / '}
+              <span className="text-red-600 dark:text-red-400">{formatBushelsShort(f.outbound)}</span>
+            </div>
+          ))}
+        </div>
+      );
+    },
+  }),
   monthCol.accessor('contracts', {
     header: '# Contracts',
     cell: (info) => info.getValue().length,

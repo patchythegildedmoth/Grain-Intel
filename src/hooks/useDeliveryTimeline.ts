@@ -12,6 +12,7 @@ export interface DeliveryMonthSummary {
   outboundBushels: number;
   netFlow: number;
   commodityBreakdown: { commodity: string; inbound: number; outbound: number }[];
+  freightBreakdown: { term: string; inbound: number; outbound: number }[];
   contracts: Contract[];
   alerts: { level: AlertLevel; message: string }[];
 }
@@ -61,6 +62,19 @@ export function useDeliveryTimeline() {
       const commodityBreakdown = [...commodityMap.entries()]
         .map(([commodity, data]) => ({ commodity, ...data }))
         .sort((a, b) => sortByCommodityOrder(a.commodity, b.commodity));
+
+      // Freight term breakdown
+      const freightMap = new Map<string, { inbound: number; outbound: number }>();
+      for (const c of group) {
+        const ft = c.freightTerm || 'Unknown';
+        if (!freightMap.has(ft)) freightMap.set(ft, { inbound: 0, outbound: 0 });
+        const entry = freightMap.get(ft)!;
+        if (c.contractType === 'Purchase') entry.inbound += c.balance;
+        else entry.outbound += c.balance;
+      }
+      const freightBreakdown = [...freightMap.entries()]
+        .map(([term, data]) => ({ term, ...data }))
+        .sort((a, b) => (b.inbound + b.outbound) - (a.inbound + a.outbound));
 
       // Alerts
       const alerts: { level: AlertLevel; message: string }[] = [];
@@ -121,6 +135,7 @@ export function useDeliveryTimeline() {
         outboundBushels,
         netFlow,
         commodityBreakdown,
+        freightBreakdown,
         contracts: group.sort((a, b) => a.endDate.getTime() - b.endDate.getTime()),
         alerts,
       };

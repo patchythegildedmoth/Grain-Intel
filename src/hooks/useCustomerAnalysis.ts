@@ -24,6 +24,8 @@ export interface CustomerProfitability {
   approxMargin: number | null;
   completedBushels: number;
   contractCount: number;
+  primaryFreightTerm: string;
+  freightMixLabel: string;
 }
 
 export interface CustomerSummary {
@@ -169,6 +171,22 @@ export function useCustomerAnalysis() {
         }
         const mktAvg = totalWeight > 0 ? weightedMarketBasis / totalWeight : null;
 
+        // Freight term mix for this customer's sales
+        const ftMap = new Map<string, number>();
+        for (const c of sales) {
+          const ft = c.freightTerm || 'Unknown';
+          ftMap.set(ft, (ftMap.get(ft) || 0) + c.pricedQty);
+        }
+        const ftEntries = [...ftMap.entries()].sort((a, b) => b[1] - a[1]);
+        const primaryFreightTerm = ftEntries.length > 0 ? ftEntries[0][0] : 'Unknown';
+        const totalFtBu = ftEntries.reduce((s, [, v]) => s + v, 0);
+        const topPercent = totalFtBu > 0 ? Math.round((ftEntries[0][1] / totalFtBu) * 100) : 0;
+        const freightMixLabel = ftEntries.length <= 1
+          ? primaryFreightTerm
+          : topPercent >= 80
+            ? `${primaryFreightTerm} (${topPercent}%)`
+            : ftEntries.slice(0, 2).map(([ft, bu]) => `${ft} ${Math.round((bu / totalFtBu) * 100)}%`).join(', ');
+
         return {
           entity,
           avgSellBasis,
@@ -176,6 +194,8 @@ export function useCustomerAnalysis() {
           approxMargin: avgSellBasis !== null && mktAvg !== null ? avgSellBasis - mktAvg : null,
           completedBushels,
           contractCount: sales.length,
+          primaryFreightTerm,
+          freightMixLabel,
         };
       })
       .sort((a, b) => b.completedBushels - a.completedBushels);

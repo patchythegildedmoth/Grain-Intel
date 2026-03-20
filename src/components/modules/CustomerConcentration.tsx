@@ -85,6 +85,9 @@ const profitColumns = [
       );
     },
   }),
+  profitCol.accessor('freightMixLabel', {
+    header: 'Freight Term',
+  }),
   profitCol.accessor('completedBushels', {
     header: 'Completed (Bu)',
     cell: (info) => formatBushelsShort(info.getValue()),
@@ -170,6 +173,13 @@ export function CustomerConcentration() {
             Approximate margin = Customer avg sell basis - Market avg buy basis
           </p>
           <DataTable data={profitability} columns={profitColumns} />
+          <div className="mt-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
+              <span className="font-semibold">Note:</span> Margin estimates do not include freight costs.
+              Delivered customers may have lower true margins than shown.
+              Pickup and FOB customers may have higher true margins than shown.
+            </p>
+          </div>
         </div>
       )}
     </div>

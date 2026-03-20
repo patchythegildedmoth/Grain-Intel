@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
-import { useBasisSpread, type SpreadRow, type HistoricalSpread } from '../../hooks/useBasisSpread';
+import { useBasisSpread, type SpreadRow, type HistoricalSpread, type FreightBasisBreakdown } from '../../hooks/useBasisSpread';
 import { DataTable } from '../shared/DataTable';
 import { StatCard } from '../shared/StatCard';
 import { AlertBadge } from '../shared/AlertBadge';
@@ -8,16 +8,47 @@ import { formatBasis, formatCurrency, formatBushelsShort } from '../../utils/for
 import { getCommodityColor } from '../../utils/commodityColors';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
 
+function FreightBreakdownCell({ items }: { items: FreightBasisBreakdown[] }) {
+  if (items.length <= 1) return null;
+  return (
+    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+      {items.map((fb) => (
+        <div key={fb.freightTerm}>
+          <span className="font-medium">{fb.freightTerm}:</span>{' '}
+          {fb.avgBasis !== null ? formatBasis(fb.avgBasis) : '—'}{' '}
+          <span className="text-gray-400">({formatBushelsShort(fb.bushels)})</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 const spreadCol = createColumnHelper<SpreadRow>();
 const spreadColumns = [
   spreadCol.accessor('futureMonthShort', { header: 'Futures Month' }),
   spreadCol.accessor('avgBuyBasis', {
     header: 'Avg Buy Basis',
-    cell: (info) => formatBasis(info.getValue()),
+    cell: (info) => {
+      const row = info.row.original;
+      return (
+        <div>
+          <div>{formatBasis(info.getValue())}</div>
+          <FreightBreakdownCell items={row.buyByFreight} />
+        </div>
+      );
+    },
   }),
   spreadCol.accessor('avgSellBasis', {
     header: 'Avg Sell Basis',
-    cell: (info) => formatBasis(info.getValue()),
+    cell: (info) => {
+      const row = info.row.original;
+      return (
+        <div>
+          <div>{formatBasis(info.getValue())}</div>
+          <FreightBreakdownCell items={row.sellByFreight} />
+        </div>
+      );
+    },
   }),
   spreadCol.accessor('grossSpread', {
     header: 'Gross Spread',
@@ -33,11 +64,43 @@ const spreadColumns = [
   }),
   spreadCol.accessor('buyBushels', {
     header: 'Buy Vol (Bu)',
-    cell: (info) => formatBushelsShort(info.getValue()),
+    cell: (info) => {
+      const row = info.row.original;
+      return (
+        <div>
+          <div>{formatBushelsShort(info.getValue())}</div>
+          {row.buyByFreight.length > 1 && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+              {row.buyByFreight.map((fb) => (
+                <div key={fb.freightTerm}>
+                  {fb.freightTerm}: {formatBushelsShort(fb.bushels)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    },
   }),
   spreadCol.accessor('sellBushels', {
     header: 'Sell Vol (Bu)',
-    cell: (info) => formatBushelsShort(info.getValue()),
+    cell: (info) => {
+      const row = info.row.original;
+      return (
+        <div>
+          <div>{formatBushelsShort(info.getValue())}</div>
+          {row.sellByFreight.length > 1 && (
+            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+              {row.sellByFreight.map((fb) => (
+                <div key={fb.freightTerm}>
+                  {fb.freightTerm}: {formatBushelsShort(fb.bushels)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    },
   }),
   spreadCol.accessor('contractCount', { header: '# Contracts' }),
 ];
@@ -47,11 +110,27 @@ const histColumns = [
   histCol.accessor('year', { header: 'Year' }),
   histCol.accessor('avgBuyBasis', {
     header: 'Avg Buy Basis',
-    cell: (info) => formatBasis(info.getValue()),
+    cell: (info) => {
+      const row = info.row.original;
+      return (
+        <div>
+          <div>{formatBasis(info.getValue())}</div>
+          <FreightBreakdownCell items={row.buyByFreight} />
+        </div>
+      );
+    },
   }),
   histCol.accessor('avgSellBasis', {
     header: 'Avg Sell Basis',
-    cell: (info) => formatBasis(info.getValue()),
+    cell: (info) => {
+      const row = info.row.original;
+      return (
+        <div>
+          <div>{formatBasis(info.getValue())}</div>
+          <FreightBreakdownCell items={row.sellByFreight} />
+        </div>
+      );
+    },
   }),
   histCol.accessor('grossSpread', {
     header: 'Gross Spread',
