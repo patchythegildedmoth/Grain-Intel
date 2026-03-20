@@ -8,6 +8,7 @@ interface MarketDataState {
   history: Record<string, DailyMarketInputs>;
   m2mSnapshots: Record<string, M2MSnapshot>;
   lastUpdated: string | null;
+  proxyUrl: string; // Cloudflare Worker URL for Yahoo Finance proxy
 
   // Actions
   updateSellBasis: (entries: MarketBasisEntry[]) => void;
@@ -17,6 +18,7 @@ interface MarketDataState {
   saveCurrentInputs: () => void;
   saveM2MSnapshot: (snapshot: Omit<M2MSnapshot, 'timestamp'>) => void;
   getInputsForDate: (date: string) => DailyMarketInputs | null;
+  setProxyUrl: (url: string) => void;
   clearData: () => void;
 }
 
@@ -44,6 +46,7 @@ export const useMarketDataStore = create<MarketDataState>()(
       history: {},
       m2mSnapshots: {},
       lastUpdated: null,
+      proxyUrl: '',
 
       updateSellBasis: (entries) =>
         set((s) => ({
@@ -93,6 +96,8 @@ export const useMarketDataStore = create<MarketDataState>()(
         return get().history[date] ?? null;
       },
 
+      setProxyUrl: (url) => set({ proxyUrl: url }),
+
       clearData: () =>
         set({
           current: { ...EMPTY_MARKET_INPUTS },
@@ -108,6 +113,7 @@ export const useMarketDataStore = create<MarketDataState>()(
         history: state.history,
         m2mSnapshots: state.m2mSnapshots,
         lastUpdated: state.lastUpdated,
+        proxyUrl: state.proxyUrl,
       }),
     },
   ),

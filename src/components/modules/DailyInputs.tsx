@@ -3,6 +3,7 @@ import { useMarketDataStore, isMarketDataStale } from '../../store/useMarketData
 import { useContractStore } from '../../store/useContractStore';
 import { useDailyInputScaffold } from '../../hooks/useDailyInputScaffold';
 import { parseMarketDataExcel, generateMarketDataTemplate } from '../../pipeline/parseMarketDataExcel';
+import { fetchSettlementPrices, type FetchSettlementsResult } from '../../utils/yahooFinance';
 import type { MarketBasisEntry, FuturesSettlement } from '../../types/marketData';
 import { formatNumber, formatDate } from '../../utils/formatters';
 import { getCommodityColor } from '../../utils/commodityColors';
@@ -10,7 +11,7 @@ import { getCommodityColor } from '../../utils/commodityColors';
 export function DailyInputs() {
   const isLoaded = useContractStore((s) => s.isLoaded);
   const { basisRows, settlementRows, commodities, gaps } = useDailyInputScaffold();
-  const { current, lastUpdated, updateSellBasis, updateSettlements, updateInTransit, updateHtaPaired, saveCurrentInputs } = useMarketDataStore();
+  const { current, lastUpdated, proxyUrl, setProxyUrl, updateSellBasis, updateSettlements, updateInTransit, updateHtaPaired, saveCurrentInputs } = useMarketDataStore();
   const stale = isMarketDataStale(lastUpdated);
 
   // Local state for form editing
@@ -24,6 +25,48 @@ export function DailyInputs() {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [fetchingSettlements, setFetchingSettlements] = useState(false);
+  const [fetchResult, setFetchResult] = useState<FetchSettlementsResult | null>(null);
+  const [proxyUrlInput, setProxyUrlInput] = useState(proxyUrl);
+  const [proxyUrlSaved, setProxyUrlSaved] = useState(false);
+
+  const handleFetchSettlements = useCallback(async () => {
+    if (!proxyUrl) return;
+    setFetchingSettlements(true);
+    setFetchResult(null);
+
+    try {
+      const result = await fetchSettlementPrices(proxyUrl, settlementRows);
+      setFetchResult(result);
+
+      // Merge fetched prices into settlement edits
+      const newEdits: Record<string, string> = { ...settlementEdits };
+      for (const [key, price] of Object.entries(result.settlements)) {
+        newEdits[key] = String(price);
+      }
+      setSettlementEdits(newEdits);
+    } catch (err) {
+      setFetchResult({
+        settlements: {},
+        fetched: 0,
+        total: settlementRows.length,
+        skipped: [],
+        failed: [`Error: ${err instanceof Error ? err.message : 'Unknown error'}`],
+      });
+    } finally {
+      setFetchingSettlements(false);
+    }
+  }, [proxyUrl, settlementRows, settlementEdits]);
+
+  const handleSaveProxyUrl = useCallback(() => {
+    const url = proxyUrlInput.trim();
+    if (url && !url.startsWith('https://')) {
+      return; // silent reject — the UI shows a hint
+    }
+    setProxyUrl(url);
+    setProxyUrlSaved(true);
+    setTimeout(() => setProxyUrlSaved(false), 2000);
+  }, [proxyUrlInput, setProxyUrl]);
 
   const handleUploadFile = useCallback(async (file: File) => {
     if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
@@ -324,6 +367,41 @@ export function DailyInputs() {
         )}
       </div>
 
+      {/* Yahoo Finance Proxy URL Config */}
+      <div className="flex items-center gap-3 px-4 py-2 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-1.102-4.243a4 4 0 015.656 0l4 4a4 4 0 01-5.656 5.656l-1.1-1.1" />
+          </svg>
+          Yahoo Finance Proxy URL:
+        </div>
+        <input
+          type="url"
+          value={proxyUrlInput}
+          onChange={(e) => { setProxyUrlInput(e.target.value); setProxyUrlSaved(false); }}
+          className="flex-1 px-2 py-1 text-xs border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 dark:text-gray-200"
+          placeholder="https://your-worker.workers.dev"
+        />
+        <button
+          onClick={handleSaveProxyUrl}
+          disabled={proxyUrlInput === proxyUrl}
+          className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+            proxyUrlSaved
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+              : proxyUrlInput === proxyUrl
+                ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+          }`}
+        >
+          {proxyUrlSaved ? '✓ Saved' : 'Save'}
+        </button>
+        {!proxyUrl && (
+          <span className="text-xs text-gray-400 dark:text-gray-500 italic">
+            Deploy worker first → <code className="text-[10px]">cd worker/yahoo-proxy && npx wrangler deploy</code>
+          </span>
+        )}
+      </div>
+
       {/* Gaps warning */}
       {gaps.length > 0 && (
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
@@ -426,8 +504,65 @@ export function DailyInputs() {
       {/* Section 2: Futures Settlements */}
       <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
-          <h3 className="font-semibold text-gray-800 dark:text-gray-200">2. Current Futures Settlement Prices</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Daily settlement price for each active CBOT futures contract month</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold text-gray-800 dark:text-gray-200">2. Current Futures Settlement Prices</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">Daily settlement price for each active CBOT futures contract month</p>
+            </div>
+            <button
+              onClick={handleFetchSettlements}
+              disabled={!proxyUrl || fetchingSettlements}
+              className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 ${
+                !proxyUrl
+                  ? 'bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-500 cursor-not-allowed'
+                  : fetchingSettlements
+                    ? 'bg-indigo-400 text-white cursor-wait'
+                    : 'bg-indigo-600 text-white hover:bg-indigo-700'
+              }`}
+              title={!proxyUrl ? 'Set up Yahoo Finance proxy URL above first' : 'Fetch end-of-day settlement prices from Yahoo Finance'}
+            >
+              {fetchingSettlements ? (
+                <>
+                  <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Fetching…
+                </>
+              ) : (
+                <>
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                  </svg>
+                  Fetch Settlements
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Fetch result feedback */}
+          {fetchResult && (
+            <div className={`mt-2 p-2 rounded-lg text-xs ${
+              fetchResult.failed.length > 0 && fetchResult.fetched === 0
+                ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300'
+                : fetchResult.failed.length > 0
+                  ? 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700 text-amber-700 dark:text-amber-300'
+                  : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-300'
+            }`}>
+              {fetchResult.fetched > 0 && (
+                <span>✓ Fetched {fetchResult.fetched} of {fetchResult.total} settlement prices. </span>
+              )}
+              {fetchResult.skipped.length > 0 && (
+                <span>Skipped: {fetchResult.skipped.join(', ')} (no CBOT futures). </span>
+              )}
+              {fetchResult.failed.length > 0 && (
+                <span>✗ Failed: {fetchResult.failed.join(', ')}. </span>
+              )}
+              {fetchResult.fetched > 0 && (
+                <span className="font-medium">Review values below, then click Save All.</span>
+              )}
+            </div>
+          )}
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
