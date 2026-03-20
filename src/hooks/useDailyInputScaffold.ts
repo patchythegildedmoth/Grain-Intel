@@ -69,7 +69,7 @@ export function useDailyInputScaffold() {
           deliveryMonth,
           sortKey: getDeliveryMonthSortKey(deliveryMonth),
           basis: existing?.basis ?? null,
-          futuresRef: existing?.futuresRef ?? '',
+          futuresRef: existing?.futuresRef || c.futureMonthShort || '',
           openContractCount: 0,
           openBushels: 0,
         });

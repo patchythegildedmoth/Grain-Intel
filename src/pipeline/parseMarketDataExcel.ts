@@ -291,16 +291,7 @@ export function generateMarketDataTemplate(data: TemplateData): ArrayBuffer {
   basisWs['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 10 }, { wch: 16 }];
   XLSX.utils.book_append_sheet(wb, basisWs, 'Sell Basis');
 
-  // Sheet 2: Settlements
-  const settlementData = [
-    ['Commodity', 'Contract Month', 'Month Code', 'Price'],
-    ...data.settlementRows.map((r) => [r.commodity, r.contractMonth, r.monthCode, r.price ?? '']),
-  ];
-  const settlementWs = XLSX.utils.aoa_to_sheet(settlementData);
-  settlementWs['!cols'] = [{ wch: 14 }, { wch: 16 }, { wch: 12 }, { wch: 10 }];
-  XLSX.utils.book_append_sheet(wb, settlementWs, 'Settlements');
-
-  // Sheet 3: In-Transit
+  // Sheet 2: In-Transit
   const transitData = [
     ['Commodity', 'Bushels'],
     ...data.commodities.map((c) => [c, data.inTransit[c] ?? 0]),
