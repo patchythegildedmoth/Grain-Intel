@@ -1,6 +1,7 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useContractStore } from '../../store/useContractStore';
 import { useScenario } from '../../hooks/useScenario';
+import { useUnpricedExposure } from '../../hooks/useUnpricedExposure';
 import { StatCard } from '../shared/StatCard';
 import { AlertBadge } from '../shared/AlertBadge';
 import { formatCurrency, formatBushelsShort } from '../../utils/formatters';
@@ -49,6 +50,36 @@ export function ScenarioPanel() {
   }, [defaultPrices]);
 
   const { scenarios, totalPnl, commodities } = useScenario(scenarioPrices);
+  const { totalNetExposure, commoditySummaries: exposureSummaries } = useUnpricedExposure();
+
+  // Compute net exposure dollar impact from scenario price changes
+  const netExposureImpact = useMemo(() => {
+    let total = 0;
+    const byCommodity: { commodity: string; netBu: number; priceChange: number; impact: number }[] = [];
+    for (const sc of scenarios) {
+      const es = exposureSummaries.find((e) => e.commodity === sc.commodity);
+      if (es && sc.priceChange !== 0) {
+        // Net long: exposed to price drops (purchase unpriced > sale unpriced)
+        // If price goes up $1 and we're net long 50K, our purchase cost increases by $50K = negative impact
+        // If price goes up $1 and we're net short 50K, our sale revenue increases = positive impact
+        // Impact = -netExposure * priceChange (net long loses when prices rise for purchases)
+        // Actually: Basis purchase = cost goes up when futures rise = negative
+        //           Basis sale = revenue goes up when futures rise = positive
+        // So impact for net = (saleExposure - purchaseExposure) * priceChange = -netExposure * priceChange
+        const impact = -es.netExposure * sc.priceChange;
+        total += impact;
+        if (es.netExposure !== 0) {
+          byCommodity.push({
+            commodity: sc.commodity,
+            netBu: es.netExposure,
+            priceChange: sc.priceChange,
+            impact,
+          });
+        }
+      }
+    }
+    return { total, byCommodity };
+  }, [scenarios, exposureSummaries]);
 
   const sortedCommodities = useMemo(
     () => [...commodities].sort(sortByCommodityOrder),
@@ -83,7 +114,7 @@ export function ScenarioPanel() {
       </div>
 
       {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard
           label="Total P&L Impact"
           value={formatCurrency(totalPnl)}
@@ -94,6 +125,12 @@ export function ScenarioPanel() {
         <StatCard
           label="Exposed Contracts"
           value={String(scenarios.reduce((s, sc) => s + sc.basisContracts, 0))}
+        />
+        <StatCard
+          label="Net Exposure"
+          value={totalNetExposure === 0 ? 'Flat' : `${totalNetExposure > 0 ? 'Long' : 'Short'} ${formatBushelsShort(Math.abs(totalNetExposure))}`}
+          delta={netExposureImpact.total !== 0 ? `Impact: ${netExposureImpact.total > 0 ? '+' : ''}${formatCurrency(netExposureImpact.total)}` : undefined}
+          deltaDirection={netExposureImpact.total > 0 ? 'up' : netExposureImpact.total < 0 ? 'down' : 'neutral'}
         />
       </div>
 
@@ -186,6 +223,25 @@ export function ScenarioPanel() {
                 )}
               </div>
             </div>
+
+            {/* Net exposure impact for this commodity */}
+            {(() => {
+              const nei = netExposureImpact.byCommodity.find((n) => n.commodity === sc.commodity);
+              if (!nei) return null;
+              return (
+                <div className="mb-3 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-sm">
+                  <span className="font-medium text-blue-800 dark:text-blue-200">Net Unpriced: </span>
+                  <span className={nei.netBu > 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}>
+                    {nei.netBu > 0 ? 'Long' : 'Short'} {formatBushelsShort(Math.abs(nei.netBu))}
+                  </span>
+                  {nei.impact !== 0 && (
+                    <span className={`ml-2 font-medium ${nei.impact >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                      → {nei.impact > 0 ? '+' : ''}{formatCurrency(nei.impact)} impact
+                    </span>
+                  )}
+                </div>
+              );
+            })()}
 
             <div className="space-y-2">
               {sc.impacts.map((impact) => (

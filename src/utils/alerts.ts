@@ -28,6 +28,9 @@ export const THRESHOLDS = {
   // Module 5: Customer Concentration
   customerConcentrationPercent: 0.25,
 
+  // Module 2: Net Exposure
+  netExposureCommodityBushels: 75_000,
+
   // Module 6: Risk Profile
   unpricedRatioThreshold: 0.30,
 } as const;

@@ -56,6 +56,8 @@ export interface DataAnomaly {
 export interface PositionSnapshot {
   timestamp: string;
   positions: Record<string, Record<string, { long: number; short: number; net: number }>>;
+  /** Per-commodity exposure snapshot for day-over-day delta. Optional for backward compat with old localStorage. */
+  exposure?: Record<string, { gross: number; net: number; purchase: number; sale: number }>;
 }
 
 export const EXPECTED_COLUMNS = [

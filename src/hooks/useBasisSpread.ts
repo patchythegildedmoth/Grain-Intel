@@ -4,13 +4,8 @@ import { weightedAverage } from '../utils/weightedAverage';
 import { sortByCommodityOrder } from '../utils/commodityColors';
 import { THRESHOLDS } from '../utils/alerts';
 import type { AlertLevel } from '../utils/alerts';
-
-export interface FreightBasisBreakdown {
-  freightTerm: string;
-  avgBasis: number | null;
-  bushels: number;
-  contractCount: number;
-}
+import { computeFreightBreakdown, type FreightBasisBreakdown } from '../utils/freightBreakdown';
+export type { FreightBasisBreakdown } from '../utils/freightBreakdown';
 
 export interface SpreadRow {
   commodity: string;
@@ -57,30 +52,6 @@ export interface CommoditySpreadSummary {
   historicalSpreads: HistoricalSpread[];
   monthlyTrend: MonthlyTrend[];
   alerts: { level: AlertLevel; message: string }[];
-}
-
-function computeFreightBreakdown(
-  contracts: { freightTerm: string | null; basis: number | null; pricedQty: number; balance: number }[],
-): FreightBasisBreakdown[] {
-  const map = new Map<string, { totalBasis: number; totalWeight: number; count: number }>();
-  for (const c of contracts) {
-    const ft = c.freightTerm || 'Unknown';
-    if (!map.has(ft)) map.set(ft, { totalBasis: 0, totalWeight: 0, count: 0 });
-    const entry = map.get(ft)!;
-    entry.count++;
-    if (c.basis !== null && c.pricedQty > 0) {
-      entry.totalBasis += c.basis * c.pricedQty;
-      entry.totalWeight += c.pricedQty;
-    }
-  }
-  return [...map.entries()]
-    .map(([freightTerm, data]) => ({
-      freightTerm,
-      avgBasis: data.totalWeight > 0 ? data.totalBasis / data.totalWeight : null,
-      bushels: contracts.filter((c) => (c.freightTerm || 'Unknown') === freightTerm).reduce((s, c) => s + c.balance, 0),
-      contractCount: data.count,
-    }))
-    .sort((a, b) => b.bushels - a.bushels);
 }
 
 export function useBasisSpread() {

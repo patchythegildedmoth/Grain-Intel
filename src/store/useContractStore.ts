@@ -38,7 +38,29 @@ function buildPositionSnapshot(contracts: Contract[]): PositionSnapshot {
     positions[commodity][fm].net = positions[commodity][fm].long - positions[commodity][fm].short;
   }
 
-  return { timestamp: new Date().toISOString(), positions };
+  // Compute per-commodity unpriced exposure for day-over-day delta
+  const exposure: PositionSnapshot['exposure'] = {};
+  for (const c of openContracts) {
+    let exposureBu = 0;
+    if (c.unpricedQty > 0) {
+      exposureBu = c.unpricedQty;
+    } else if (c.pricingType === 'HTA' && c.balance > 0) {
+      exposureBu = c.balance;
+    }
+    if (exposureBu > 0) {
+      const commodity = c.commodityCode;
+      if (!exposure[commodity]) exposure[commodity] = { gross: 0, net: 0, purchase: 0, sale: 0 };
+      exposure[commodity].gross += exposureBu;
+      if (c.contractType === 'Purchase') {
+        exposure[commodity].purchase += exposureBu;
+      } else {
+        exposure[commodity].sale += exposureBu;
+      }
+      exposure[commodity].net = exposure[commodity].purchase - exposure[commodity].sale;
+    }
+  }
+
+  return { timestamp: new Date().toISOString(), positions, exposure };
 }
 
 export const useContractStore = create<ContractState>()(

@@ -15,11 +15,19 @@ export function MorningBrief() {
   const uploadDate = useContractStore((s) => s.uploadDate);
 
   const { summaries, openContractCount } = useNetPosition();
-  const { totalExposure, totalOverdue, totalUrgent, totalContracts: unpricedCount } = useUnpricedExposure();
+  const { totalExposure, totalNetExposure, totalOverdue, totalUrgent, totalContracts: unpricedCount, previousExposure } = useUnpricedExposure();
   const { currentMonth } = useDeliveryTimeline();
   const { summaries: spreadSummaries } = useBasisSpread();
   const { customerSummaries } = useCustomerAnalysis();
   const { overallHedgeRatio, profiles } = useRiskProfile();
+
+  // Net exposure delta for Morning Brief KPI
+  const prevTotalNet = previousExposure
+    ? Object.values(previousExposure).reduce((s, e) => s + e.net, 0)
+    : null;
+  const netExposureDelta = prevTotalNet !== null ? totalNetExposure - prevTotalNet : null;
+  const netExposureLabel = totalNetExposure === 0 ? 'Flat' :
+    `${totalNetExposure > 0 ? 'Net Long' : 'Net Short'} ${formatBushelsShort(Math.abs(totalNetExposure))}`;
 
   const totalLong = summaries.reduce((s, c) => s + c.totalLong, 0);
   const totalShort = summaries.reduce((s, c) => s + c.totalShort, 0);
@@ -92,6 +100,8 @@ export function MorningBrief() {
         <StatCard
           label="Unpriced Exposure"
           value={formatBushelsShort(totalExposure)}
+          delta={`${netExposureLabel}${netExposureDelta !== null ? ` (${netExposureDelta >= 0 ? '+' : ''}${formatBushelsShort(netExposureDelta)})` : ''}`}
+          deltaDirection={Math.abs(totalNetExposure) < (prevTotalNet !== null ? Math.abs(prevTotalNet) : Infinity) ? 'up' : totalNetExposure !== 0 ? 'down' : 'neutral'}
           colorClass={totalOverdue > 0 ? 'border-red-300 dark:border-red-700' : ''}
         />
       </div>
@@ -123,7 +133,14 @@ export function MorningBrief() {
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <h3 className="font-semibold mb-2">Top Unpriced Exposure</h3>
           <div className="text-2xl font-bold">{formatBushelsShort(totalExposure)} bu</div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <div className={`text-sm font-medium mt-1 ${
+            totalNetExposure === 0 ? 'text-gray-500 dark:text-gray-400' :
+            Math.abs(totalNetExposure) > 75_000 ? 'text-amber-600 dark:text-amber-400' :
+            'text-gray-600 dark:text-gray-300'
+          }`}>
+            {netExposureLabel}
+          </div>
+          <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
             {unpricedCount} contracts
             {totalOverdue > 0 && <span className="text-red-600 dark:text-red-400"> ({totalOverdue} overdue)</span>}
             {totalUrgent > 0 && <span className="text-amber-600 dark:text-amber-400"> ({totalUrgent} urgent)</span>}
