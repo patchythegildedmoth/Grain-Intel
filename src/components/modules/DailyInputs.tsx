@@ -1,7 +1,8 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useMarketDataStore, isMarketDataStale } from '../../store/useMarketDataStore';
 import { useContractStore } from '../../store/useContractStore';
 import { useDailyInputScaffold } from '../../hooks/useDailyInputScaffold';
+import { parseMarketDataExcel, generateMarketDataTemplate } from '../../pipeline/parseMarketDataExcel';
 import type { MarketBasisEntry, FuturesSettlement } from '../../types/marketData';
 import { formatNumber, formatDate } from '../../utils/formatters';
 import { getCommodityColor } from '../../utils/commodityColors';
@@ -19,6 +20,122 @@ export function DailyInputs() {
   const [htaPairedEdits, setHtaPairedEdits] = useState<Record<string, string>>({});
   const [saved, setSaved] = useState(false);
   const [validationWarnings, setValidationWarnings] = useState<string[]>([]);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleUploadFile = useCallback(async (file: File) => {
+    if (!file.name.endsWith('.xlsx') && !file.name.endsWith('.xls') && !file.name.endsWith('.csv')) {
+      setUploadError('Please upload an .xlsx or .xls file');
+      return;
+    }
+
+    try {
+      setUploadError(null);
+      setUploadSuccess(null);
+
+      const buffer = await file.arrayBuffer();
+      const parsed = parseMarketDataExcel(buffer);
+
+      // Apply parsed data to edit state so user can review before saving
+      const newBasisEdits: Record<string, { basis: string; futuresRef: string }> = {};
+      for (const entry of parsed.sellBasis) {
+        newBasisEdits[`${entry.commodity}|${entry.deliveryMonth}`] = {
+          basis: String(entry.basis),
+          futuresRef: entry.futuresRef,
+        };
+      }
+      setBasisEdits(newBasisEdits);
+
+      const newSettlementEdits: Record<string, string> = {};
+      for (const entry of parsed.settlements) {
+        newSettlementEdits[`${entry.commodity}|${entry.contractMonth}`] = String(entry.price);
+      }
+      setSettlementEdits(newSettlementEdits);
+
+      const newInTransitEdits: Record<string, string> = {};
+      for (const [commodity, bushels] of Object.entries(parsed.inTransit)) {
+        newInTransitEdits[commodity] = String(bushels);
+      }
+      if (Object.keys(newInTransitEdits).length > 0) setInTransitEdits(newInTransitEdits);
+
+      const newHtaPairedEdits: Record<string, string> = {};
+      for (const [commodity, bushels] of Object.entries(parsed.htaPaired)) {
+        newHtaPairedEdits[commodity] = String(bushels);
+      }
+      if (Object.keys(newHtaPairedEdits).length > 0) setHtaPairedEdits(newHtaPairedEdits);
+
+      const parts: string[] = [];
+      if (parsed.sellBasis.length > 0) parts.push(`${parsed.sellBasis.length} basis entries`);
+      if (parsed.settlements.length > 0) parts.push(`${parsed.settlements.length} settlements`);
+      if (Object.keys(parsed.inTransit).length > 0) parts.push('in-transit');
+      if (Object.keys(parsed.htaPaired).length > 0) parts.push('HTA-paired');
+
+      const summary = parts.length > 0
+        ? `Loaded ${parts.join(', ')} from ${file.name}. Review values below and click Save All.`
+        : `No market data found in ${file.name}. Check the file format.`;
+
+      if (parts.length > 0) {
+        setUploadSuccess(summary);
+      } else {
+        setUploadError(summary);
+      }
+
+      if (parsed.warnings.length > 0) {
+        setValidationWarnings(parsed.warnings);
+      }
+    } catch (err) {
+      setUploadError(`Failed to parse file: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+
+    // Reset file input so the same file can be re-uploaded
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  }, []);
+
+  const handleDownloadTemplate = useCallback(() => {
+    const templateData = {
+      basisRows: basisRows.map((r) => ({
+        commodity: r.commodity,
+        deliveryMonth: r.deliveryMonth,
+        basis: r.basis,
+        futuresRef: r.futuresRef,
+      })),
+      settlementRows: settlementRows.map((r) => ({
+        commodity: r.commodity,
+        contractMonth: r.contractMonth,
+        monthCode: r.monthCode,
+        price: r.price,
+      })),
+      commodities,
+      inTransit: current.inTransit,
+      htaPaired: current.htaPaired,
+    };
+
+    const buffer = generateMarketDataTemplate(templateData);
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const today = new Date().toISOString().slice(0, 10);
+    a.download = `Market_Inputs_Template_${today}.xlsx`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }, [basisRows, settlementRows, commodities, current.inTransit, current.htaPaired]);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragging(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleUploadFile(file);
+  }, [handleUploadFile]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleUploadFile(file);
+  }, [handleUploadFile]);
 
   if (!isLoaded) {
     return (
@@ -144,6 +261,67 @@ export function DailyInputs() {
             {saved ? '✓ Saved' : 'Save All'}
           </button>
         </div>
+      </div>
+
+      {/* Excel Upload Zone */}
+      <div
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={handleDrop}
+        className={`rounded-xl border-2 border-dashed p-4 transition-colors ${
+          dragging
+            ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
+            : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-800'
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                Upload Market Data Excel
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Drag & drop or click to upload. Values populate the form for review before saving.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadTemplate}
+              className="px-3 py-1.5 text-xs font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+            >
+              ↓ Download Template
+            </button>
+            <label className="cursor-pointer">
+              <span className="px-3 py-1.5 text-xs font-medium text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors inline-block">
+                Choose File
+              </span>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleFileChange}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
+
+        {uploadSuccess && (
+          <div className="mt-3 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-lg text-xs text-green-700 dark:text-green-300">
+            ✓ {uploadSuccess}
+          </div>
+        )}
+        {uploadError && (
+          <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg text-xs text-red-700 dark:text-red-300">
+            ✗ {uploadError}
+          </div>
+        )}
       </div>
 
       {/* Gaps warning */}
