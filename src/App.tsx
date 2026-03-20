@@ -12,6 +12,9 @@ import { CustomerConcentration } from './components/modules/CustomerConcentratio
 import { ContractTypeRiskProfile } from './components/modules/ContractTypeRiskProfile';
 import { ScenarioPanel } from './components/modules/ScenarioPanel';
 import { DataHealth } from './components/modules/DataHealth';
+import { DailyInputs } from './components/modules/DailyInputs';
+import { PriceLaterExposure } from './components/modules/PriceLaterExposure';
+import { MarkToMarket } from './components/modules/MarkToMarket';
 
 function getHashModule(): string {
   const hash = window.location.hash.replace('#', '');
@@ -77,6 +80,12 @@ export default function App() {
         return <ContractTypeRiskProfile />;
       case 'scenario':
         return <ScenarioPanel />;
+      case 'daily-inputs':
+        return <DailyInputs />;
+      case 'price-later':
+        return <PriceLaterExposure />;
+      case 'mark-to-market':
+        return <MarkToMarket />;
       case 'data-health':
         return <DataHealth />;
       default:

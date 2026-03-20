@@ -4,10 +4,13 @@ import { useDeliveryTimeline } from '../../hooks/useDeliveryTimeline';
 import { useBasisSpread } from '../../hooks/useBasisSpread';
 import { useCustomerAnalysis } from '../../hooks/useCustomerAnalysis';
 import { useRiskProfile } from '../../hooks/useRiskProfile';
+import { useMarkToMarket } from '../../hooks/useMarkToMarket';
+import { usePriceLaterExposure } from '../../hooks/usePriceLaterExposure';
 import { useContractStore } from '../../store/useContractStore';
+import { useMarketDataStore } from '../../store/useMarketDataStore';
 import { StatCard } from '../shared/StatCard';
 import { AlertBadge } from '../shared/AlertBadge';
-import { formatBushelsShort, formatCurrency, formatPercent, formatDate } from '../../utils/formatters';
+import { formatBushelsShort, formatCurrency, formatPercent, formatDate, formatBasis } from '../../utils/formatters';
 import { getCommodityColor } from '../../utils/commodityColors';
 
 export function MorningBrief() {
@@ -20,6 +23,9 @@ export function MorningBrief() {
   const { summaries: spreadSummaries } = useBasisSpread();
   const { customerSummaries } = useCustomerAnalysis();
   const { overallHedgeRatio, profiles } = useRiskProfile();
+  const { totalBookPnl, totalOpenPnl } = useMarkToMarket();
+  const { totalDailyCarry, summaries: priceLaterSummaries } = usePriceLaterExposure();
+  const hasMarketData = useMarketDataStore((s) => s.lastUpdated !== null);
 
   // Net exposure delta for Morning Brief KPI
   const prevTotalNet = previousExposure
@@ -105,6 +111,49 @@ export function MorningBrief() {
           colorClass={totalOverdue > 0 ? 'border-red-300 dark:border-red-700' : ''}
         />
       </div>
+
+      {/* M2M KPIs — only shown when market data exists */}
+      {hasMarketData && (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard
+            label="Book P&L"
+            value={formatCurrency(totalBookPnl)}
+            deltaDirection={totalBookPnl >= 0 ? 'up' : 'down'}
+          />
+          <StatCard
+            label="Open P&L"
+            value={formatCurrency(totalOpenPnl)}
+            delta="At-risk exposure"
+            deltaDirection={totalOpenPnl >= 0 ? 'up' : 'down'}
+          />
+          <StatCard
+            label="Daily Carry Cost"
+            value={formatCurrency(Math.abs(totalDailyCarry))}
+            delta={totalDailyCarry < 0 ? 'BENEFIT (inverted)' : 'Cost per day'}
+            deltaDirection={totalDailyCarry < 0 ? 'up' : totalDailyCarry > 500 ? 'down' : undefined}
+          />
+          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
+            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Carry / Inversion</div>
+            <div className="space-y-1">
+              {priceLaterSummaries.filter((s) => s.carrySpread).map((s) => (
+                <div key={s.commodity} className="flex items-center justify-between text-xs">
+                  <span className="font-medium">{s.commodity}</span>
+                  <span className={`px-1.5 py-0.5 rounded font-medium ${
+                    s.carrySpread!.isInverted
+                      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                  }`}>
+                    {s.carrySpread!.isInverted ? 'INV' : 'CARRY'} {formatBasis(s.carrySpread!.spread)}
+                  </span>
+                </div>
+              ))}
+              {priceLaterSummaries.filter((s) => s.carrySpread).length === 0 && (
+                <span className="text-gray-400 text-xs">Enter market data</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Net Position by Commodity */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
