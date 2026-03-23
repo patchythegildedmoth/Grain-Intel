@@ -16,6 +16,20 @@ export const COMMODITY_YAHOO_SYMBOLS: Record<string, string> = {
   'Soybean Meal': 'ZM',
 };
 
+/**
+ * Yahoo Finance returns CBOT grain futures in CENTS per bushel (e.g., 460.5 for corn).
+ * iRely stores them in DOLLARS per bushel (e.g., 4.605).
+ * Soybean Meal is in dollars per short ton — no conversion needed.
+ * This map defines which commodities need cents→dollars conversion (÷100).
+ */
+const CENTS_PER_BUSHEL_COMMODITIES: Record<string, boolean> = {
+  'Corn': true,
+  'Soybeans': true,
+  'Wheat': true,
+  'Oats': true,
+  // Soybean Meal is quoted in $/ton — no conversion
+};
+
 /** Commodities with no CBOT-traded futures */
 export const NON_CBOT_COMMODITIES = ['Barley', 'Milo', 'Cottonseed', 'Commodity Other'];
 
@@ -66,8 +80,8 @@ export async function fetchSettlementPrices(
   const skippedSet = new Set<string>();
   const failed: string[] = [];
 
-  // Build symbol map: Yahoo symbol → list of row keys that need this price
-  const symbolToKeys = new Map<string, { symbol: string; keys: string[] }>();
+  // Build symbol map: Yahoo symbol → list of row keys that need this price + commodity name
+  const symbolToKeys = new Map<string, { symbol: string; commodity: string; keys: string[] }>();
 
   for (const row of rows) {
     const symbol = buildYahooSymbol(row.commodity, row.monthCode, row.contractMonth);
@@ -79,7 +93,7 @@ export async function fetchSettlementPrices(
     }
 
     if (!symbolToKeys.has(symbol)) {
-      symbolToKeys.set(symbol, { symbol, keys: [] });
+      symbolToKeys.set(symbol, { symbol, commodity: row.commodity, keys: [] });
     }
     symbolToKeys.get(symbol)!.keys.push(key);
   }
@@ -90,7 +104,7 @@ export async function fetchSettlementPrices(
   // Fetch all symbols in parallel
   const entries = [...symbolToKeys.values()];
   const results = await Promise.allSettled(
-    entries.map(async ({ symbol, keys }) => {
+    entries.map(async ({ symbol, commodity, keys }) => {
       const url = `${baseUrl}?symbol=${encodeURIComponent(symbol)}`;
       const resp = await fetch(url, { signal: AbortSignal.timeout(10_000) });
 
@@ -99,10 +113,16 @@ export async function fetchSettlementPrices(
       }
 
       const json = await resp.json();
-      const price = parseYahooChartPrice(json);
+      let price = parseYahooChartPrice(json);
 
       if (price === null) {
         throw new Error(`No price data in response for ${symbol}`);
+      }
+
+      // Yahoo Finance returns CBOT grains in cents/bu — convert to $/bu
+      // to match iRely's format (e.g., 460.5 → 4.605)
+      if (CENTS_PER_BUSHEL_COMMODITIES[commodity]) {
+        price = price / 100;
       }
 
       // Map price back to all row keys that share this symbol
