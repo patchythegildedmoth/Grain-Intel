@@ -79,12 +79,16 @@ export function useMarkToMarket() {
   return useMemo(() => {
     const openContracts = contracts.filter((c) => c.isOpen && c.balance > 0);
 
-    // Build lookup maps
+    // Build lookup maps — exclude zero prices (unsaved/failed fetches)
     const settlementMap = new Map<string, number>();
     for (const s of settlements) {
-      settlementMap.set(`${s.commodity}|${s.contractMonth}`, s.price);
+      if (s.price > 0) {
+        settlementMap.set(`${s.commodity}|${s.contractMonth}`, s.price);
+      }
     }
 
+    // Basis CAN legitimately be zero or negative, so include all entries
+    // that were explicitly saved (non-null in store means user entered it)
     const basisMap = new Map<string, number>();
     for (const b of sellBasis) {
       basisMap.set(`${b.commodity}|${b.deliveryMonth}`, b.basis);
