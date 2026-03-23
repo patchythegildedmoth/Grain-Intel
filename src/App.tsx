@@ -45,7 +45,7 @@ export default function App() {
     window.location.hash = id;
   }, []);
 
-  // Show upload screen if no data
+  // Show guided welcome screen if no data
   if (!isLoaded) {
     return (
       <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
@@ -54,10 +54,42 @@ export default function App() {
             Ag Source <span className="text-blue-600 dark:text-blue-400">Grain Intelligence</span>
           </h1>
           <p className="mt-2 text-gray-500 dark:text-gray-400">
-            Upload your iRely contract export to get started
+            Daily trading intelligence from your iRely contract data
           </p>
         </div>
+
         <FileUpload />
+
+        {/* Ghost preview — shows what the Morning Brief looks like once data loads */}
+        <div className="max-w-4xl mx-auto px-8 pb-12">
+          <p className="text-center text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">
+            Preview — Morning Brief
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-40 pointer-events-none select-none">
+            {[
+              { label: 'Unpriced Exposure', icon: '⚠️' },
+              { label: 'Book P&L', icon: '💰' },
+              { label: 'Net Position', icon: '📊' },
+              { label: 'Overdue Contracts', icon: '🔴' },
+            ].map((card) => (
+              <div
+                key={card.label}
+                className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
+              >
+                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                  {card.icon} {card.label}
+                </div>
+                <div className="mt-2 text-2xl font-bold text-gray-300 dark:text-gray-600">
+                  —
+                </div>
+                <div className="mt-1 h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-3">
+            Upload your .xlsx export to populate these metrics
+          </p>
+        </div>
       </div>
     );
   }

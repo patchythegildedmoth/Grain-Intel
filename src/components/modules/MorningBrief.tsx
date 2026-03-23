@@ -90,48 +90,71 @@ export function MorningBrief() {
         </div>
       )}
 
-      {/* Top-level KPIs */}
+      {/* Top-level KPIs — clickable, navigates to source module */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Open Contracts" value={String(openContractCount)} />
-        <StatCard
-          label="Net Position"
-          value={formatBushelsShort(totalNet)}
-          deltaDirection={totalNet >= 0 ? 'up' : 'down'}
-        />
-        <StatCard
-          label="Hedge Ratio"
-          value={formatPercent(overallHedgeRatio)}
-          deltaDirection={overallHedgeRatio >= 0.7 ? 'up' : 'down'}
-        />
-        <StatCard
-          label="Unpriced Exposure"
-          value={formatBushelsShort(totalExposure)}
-          delta={`${netExposureLabel}${netExposureDelta !== null ? ` (${netExposureDelta >= 0 ? '+' : ''}${formatBushelsShort(netExposureDelta)})` : ''}`}
-          deltaDirection={Math.abs(totalNetExposure) < (prevTotalNet !== null ? Math.abs(prevTotalNet) : Infinity) ? 'up' : totalNetExposure !== 0 ? 'down' : 'neutral'}
-          colorClass={totalOverdue > 0 ? 'border-red-300 dark:border-red-700' : ''}
-        />
+        <a href="#unpriced-exposure" className="group">
+          <StatCard
+            label="⚠️ Unpriced Exposure"
+            value={formatBushelsShort(totalExposure)}
+            delta={`${netExposureLabel}${netExposureDelta !== null ? ` (${netExposureDelta >= 0 ? '+' : ''}${formatBushelsShort(netExposureDelta)})` : ''}`}
+            deltaDirection={Math.abs(totalNetExposure) < (prevTotalNet !== null ? Math.abs(prevTotalNet) : Infinity) ? 'up' : totalNetExposure !== 0 ? 'down' : 'neutral'}
+            colorClass={`${totalOverdue > 0 ? 'border-red-300 dark:border-red-700' : ''} group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer`}
+          />
+        </a>
+        <a href="#net-position" className="group">
+          <StatCard
+            label="Net Position"
+            value={formatBushelsShort(totalNet)}
+            deltaDirection={totalNet >= 0 ? 'up' : 'down'}
+            colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+          />
+        </a>
+        <a href="#risk-profile" className="group">
+          <StatCard
+            label="Hedge Ratio"
+            value={formatPercent(overallHedgeRatio)}
+            deltaDirection={overallHedgeRatio >= 0.7 ? 'up' : 'down'}
+            colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+          />
+        </a>
+        <a href="#data-health" className="group">
+          <StatCard
+            label="Open Contracts"
+            value={String(openContractCount)}
+            colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+          />
+        </a>
       </div>
 
-      {/* M2M KPIs — only shown when market data exists */}
+      {/* M2M KPIs — only shown when market data exists, clickable */}
       {hasMarketData && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard
-            label="Book P&L"
-            value={formatCurrency(totalBookPnl)}
-            deltaDirection={totalBookPnl >= 0 ? 'up' : 'down'}
-          />
-          <StatCard
-            label="Open P&L"
-            value={formatCurrency(totalOpenPnl)}
-            delta="At-risk exposure"
-            deltaDirection={totalOpenPnl >= 0 ? 'up' : 'down'}
-          />
-          <StatCard
-            label="Daily Carry Cost"
-            value={formatCurrency(Math.abs(totalDailyCarry))}
-            delta={totalDailyCarry < 0 ? 'BENEFIT (inverted)' : 'Cost per day'}
-            deltaDirection={totalDailyCarry < 0 ? 'up' : totalDailyCarry > 500 ? 'down' : undefined}
-          />
+          <a href="#mark-to-market" className="group">
+            <StatCard
+              label="💰 Book P&L"
+              value={formatCurrency(totalBookPnl)}
+              deltaDirection={totalBookPnl >= 0 ? 'up' : 'down'}
+              colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+            />
+          </a>
+          <a href="#mark-to-market" className="group">
+            <StatCard
+              label="Open P&L"
+              value={formatCurrency(totalOpenPnl)}
+              delta="At-risk exposure"
+              deltaDirection={totalOpenPnl >= 0 ? 'up' : 'down'}
+              colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+            />
+          </a>
+          <a href="#price-later" className="group">
+            <StatCard
+              label="Daily Carry Cost"
+              value={formatCurrency(Math.abs(totalDailyCarry))}
+              delta={totalDailyCarry < 0 ? 'BENEFIT (inverted)' : 'Cost per day'}
+              deltaDirection={totalDailyCarry < 0 ? 'up' : totalDailyCarry > 500 ? 'down' : undefined}
+              colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+            />
+          </a>
           <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Carry / Inversion</div>
             <div className="space-y-1">
@@ -155,8 +178,8 @@ export function MorningBrief() {
         </div>
       )}
 
-      {/* Net Position by Commodity */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      {/* Net Position by Commodity — clickable */}
+      <a href="#net-position" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
         <h3 className="font-semibold mb-3">Net Position by Commodity</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {summaries.map((s) => (
@@ -174,12 +197,12 @@ export function MorningBrief() {
             </div>
           ))}
         </div>
-      </div>
+      </a>
 
-      {/* Three-column section */}
+      {/* Three-column section — clickable panels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Unpriced exposure */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <a href="#unpriced-exposure" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">Top Unpriced Exposure</h3>
           <div className="text-2xl font-bold">{formatBushelsShort(totalExposure)} bu</div>
           <div className={`text-sm font-medium mt-1 ${
@@ -194,10 +217,10 @@ export function MorningBrief() {
             {totalOverdue > 0 && <span className="text-red-600 dark:text-red-400"> ({totalOverdue} overdue)</span>}
             {totalUrgent > 0 && <span className="text-amber-600 dark:text-amber-400"> ({totalUrgent} urgent)</span>}
           </div>
-        </div>
+        </a>
 
         {/* This month deliveries */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <a href="#delivery-timeline" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">This Month Deliveries</h3>
           {currentMonth ? (
             <>
@@ -219,10 +242,10 @@ export function MorningBrief() {
           ) : (
             <div className="text-sm text-gray-500 dark:text-gray-400">No deliveries this month</div>
           )}
-        </div>
+        </a>
 
         {/* Current spreads */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <a href="#basis-spread" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">Current Spreads</h3>
           <div className="space-y-1 text-sm">
             {spreadSummaries.slice(0, 5).map((s) => (
@@ -238,12 +261,12 @@ export function MorningBrief() {
               </div>
             ))}
           </div>
-        </div>
+        </a>
       </div>
 
-      {/* Customer concentration + Risk */}
+      {/* Customer concentration + Risk — clickable */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <a href="#customer-concentration" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">Top Customer Concentration</h3>
           <div className="space-y-1 text-sm">
             {customerSummaries.slice(0, 5).map((cs, i) => (
@@ -255,9 +278,9 @@ export function MorningBrief() {
               </div>
             ))}
           </div>
-        </div>
+        </a>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <a href="#risk-profile" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">Hedge Ratio by Commodity</h3>
           <div className="space-y-1 text-sm">
             {profiles.map((p) => (
@@ -274,7 +297,7 @@ export function MorningBrief() {
               </div>
             ))}
           </div>
-        </div>
+        </a>
       </div>
 
       {/* Print footer */}
