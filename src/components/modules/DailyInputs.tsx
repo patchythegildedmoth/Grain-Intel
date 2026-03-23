@@ -89,13 +89,17 @@ export function DailyInputs() {
           futuresRef: entry.futuresRef,
         };
       }
-      setBasisEdits(newBasisEdits);
+      if (Object.keys(newBasisEdits).length > 0) setBasisEdits((prev) => ({ ...prev, ...newBasisEdits }));
 
-      const newSettlementEdits: Record<string, string> = {};
-      for (const entry of parsed.settlements) {
-        newSettlementEdits[`${entry.commodity}|${entry.contractMonth}`] = String(entry.price);
+      // Only overwrite settlement edits if the Excel actually had settlements
+      // (avoids wiping out Yahoo Finance fetched values when uploading basis-only Excel)
+      if (parsed.settlements.length > 0) {
+        const newSettlementEdits: Record<string, string> = {};
+        for (const entry of parsed.settlements) {
+          newSettlementEdits[`${entry.commodity}|${entry.contractMonth}`] = String(entry.price);
+        }
+        setSettlementEdits((prev) => ({ ...prev, ...newSettlementEdits }));
       }
-      setSettlementEdits(newSettlementEdits);
 
       const newInTransitEdits: Record<string, string> = {};
       for (const [commodity, bushels] of Object.entries(parsed.inTransit)) {
@@ -239,10 +243,13 @@ export function DailyInputs() {
 
     // Build settlement entries
     const settlements: FuturesSettlement[] = settlementRows.map((row) => {
-      const edit = settlementEdits[`${row.commodity}|${row.contractMonth}`];
-      const price = edit ? parseFloat(edit) : row.price;
+      const editKey = `${row.commodity}|${row.contractMonth}`;
+      const edit = settlementEdits[editKey];
+      // Use the edited value if present, otherwise fall back to scaffold (which may be from store)
+      const price = edit !== undefined && edit !== '' ? parseFloat(edit) : row.price;
+      const finalPrice = price !== null && !isNaN(price as number) ? (price as number) : 0;
 
-      if (price !== null && !isNaN(price as number) && (price as number) <= 0) {
+      if (finalPrice > 0 && finalPrice <= 0) {
         warnings.push(`${row.commodity} ${row.contractMonth}: settlement price must be > $0`);
       }
 
@@ -250,7 +257,7 @@ export function DailyInputs() {
         commodity: row.commodity,
         contractMonth: row.contractMonth,
         monthCode: row.monthCode,
-        price: price !== null && !isNaN(price as number) ? (price as number) : 0,
+        price: finalPrice,
       };
     });
 
