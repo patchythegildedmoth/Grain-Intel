@@ -339,14 +339,29 @@ export function generateMarketDataTemplate(data: TemplateData): ArrayBuffer {
   htaWs['!cols'] = [{ wch: 14 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, htaWs, 'HTA-Paired');
 
-  // Sheet 4: Freight Costs (FOB/Pickup contracts)
+  // Sheet 4: Freight Tiers (FOB/Pickup contracts)
   if (data.freightRows.length > 0) {
     const freightData = [
-      ['Contract Number', 'Commodity', 'Entity', 'Freight Term', 'Balance', 'Freight Tier'],
-      ...data.freightRows.map((r) => [r.contractNumber, r.commodity, r.entity, r.freightTerm, r.balance, r.freightTier ?? '']),
+      ['Contract Number', 'Commodity', 'Entity', 'Freight Term', 'Balance', 'Freight Tier', '', 'TIER REFERENCE'],
+      ...data.freightRows.map((r, i) => [
+        r.contractNumber, r.commodity, r.entity, r.freightTerm, r.balance, r.freightTier ?? '',
+        '', // spacer
+        i === 0 ? 'A = $0.00 (no freight)' :
+        i === 1 ? 'B = $0.25/bu' :
+        i === 2 ? 'C = $0.35/bu' :
+        i === 3 ? 'D = $0.45/bu' :
+        i === 4 ? 'E = $0.55/bu' :
+        i === 5 ? 'F = $0.65/bu' :
+        i === 6 ? 'G = $0.75/bu' :
+        i === 7 ? 'H = $0.85/bu' :
+        i === 8 ? 'I = $0.95/bu' :
+        i === 9 ? 'J = $1.05/bu' :
+        i === 10 ? 'K = $1.15/bu' :
+        i === 11 ? 'L = $1.25/bu' : '',
+      ]),
     ];
     const freightWs = XLSX.utils.aoa_to_sheet(freightData);
-    freightWs['!cols'] = [{ wch: 16 }, { wch: 14 }, { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 14 }];
+    freightWs['!cols'] = [{ wch: 16 }, { wch: 14 }, { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 2 }, { wch: 22 }];
     XLSX.utils.book_append_sheet(wb, freightWs, 'Freight');
   }
 
