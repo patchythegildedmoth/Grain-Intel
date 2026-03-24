@@ -20,6 +20,7 @@ export interface RawContract {
   cashPrice: number | null;
   createdDate: Date;
   freightTerm: string | null;
+  freightTier: string | null; // A-L tier letter from iRely or Freight Excel tab
   salesperson: string;
 }
 
@@ -99,5 +100,6 @@ export const COLUMN_MAP: Record<string, keyof RawContract> = {
   'Cash Price': 'cashPrice',
   'Created Date': 'createdDate',
   'Freight Term': 'freightTerm',
+  'Freight Tier': 'freightTier',
   'Salesperson': 'salesperson',
 };

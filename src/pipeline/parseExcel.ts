@@ -83,6 +83,7 @@ export function parseExcelFile(data: ArrayBuffer): ParseResult {
       cashPrice: toNullableNumber(get('Cash Price')),
       createdDate: toDate(get('Created Date')),
       freightTerm: toNullableString(get('Freight Term')),
+      freightTier: toNullableString(get('Freight Tier')),
       salesperson: toString(get('Salesperson')),
     };
 

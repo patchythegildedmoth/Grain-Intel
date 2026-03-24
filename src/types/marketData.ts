@@ -19,7 +19,7 @@ export interface DailyMarketInputs {
   settlements: FuturesSettlement[];
   inTransit: Record<string, number>; // keyed by commodity
   htaPaired: Record<string, number>; // keyed by commodity
-  freightCosts: Record<string, number>; // keyed by contractNumber, $/bu
+  freightTiers: Record<string, string>; // keyed by contractNumber, tier letter (A-L)
 }
 
 export interface M2MSnapshot {
@@ -41,7 +41,7 @@ export const EMPTY_MARKET_INPUTS: DailyMarketInputs = {
   settlements: [],
   inTransit: {},
   htaPaired: {},
-  freightCosts: {},
+  freightTiers: {},
 };
 
 /** CBOT futures month codes */

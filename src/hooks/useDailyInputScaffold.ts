@@ -47,7 +47,7 @@ export function useDailyInputScaffold() {
         settlementRows: [] as ScaffoldSettlementRow[],
         commodities: [] as string[],
         gaps: [] as MissingDataGap[],
-        freightRows: [] as { contractNumber: string; commodity: string; entity: string; freightTerm: string; balance: number; freightCost: number | null }[],
+        freightRows: [] as { contractNumber: string; commodity: string; entity: string; freightTerm: string; balance: number; freightTier: string | null }[],
       };
     }
 
@@ -156,7 +156,7 @@ export function useDailyInputScaffold() {
       }
     }
 
-    // --- Freight rows: FOB/Pickup contracts need freight cost ---
+    // --- Freight rows: FOB/Pickup contracts need freight tier assignment ---
     const freightRows = openContracts
       .filter((c) => c.freightTerm === 'FOB' || c.freightTerm === 'Pickup' || c.freightTerm === 'Picked Up')
       .map((c) => ({
@@ -165,7 +165,8 @@ export function useDailyInputScaffold() {
         entity: c.entity,
         freightTerm: c.freightTerm ?? '',
         balance: c.balance,
-        freightCost: current.freightCosts?.[c.contractNumber] ?? null,
+        // Priority: Excel upload > iRely column > null
+        freightTier: current.freightTiers?.[c.contractNumber] ?? c.freightTier ?? null,
       }))
       .sort((a, b) => {
         const commodityDiff = sortByCommodityOrder(a.commodity, b.commodity);

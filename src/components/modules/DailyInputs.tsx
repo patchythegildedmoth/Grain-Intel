@@ -11,7 +11,7 @@ import { getCommodityColor } from '../../utils/commodityColors';
 export function DailyInputs() {
   const isLoaded = useContractStore((s) => s.isLoaded);
   const { basisRows, settlementRows, commodities, gaps, freightRows } = useDailyInputScaffold();
-  const { current, lastUpdated, proxyUrl, setProxyUrl, updateSellBasis, updateSettlements, updateInTransit, updateHtaPaired, updateFreightCosts, saveCurrentInputs } = useMarketDataStore();
+  const { current, lastUpdated, proxyUrl, setProxyUrl, updateSellBasis, updateSettlements, updateInTransit, updateHtaPaired, updateFreightTiers, saveCurrentInputs } = useMarketDataStore();
   const stale = isMarketDataStale(lastUpdated);
 
   // Local state for form editing
@@ -113,9 +113,9 @@ export function DailyInputs() {
       }
       if (Object.keys(newHtaPairedEdits).length > 0) setHtaPairedEdits(newHtaPairedEdits);
 
-      // Apply freight costs directly to store (keyed by contract number)
-      if (Object.keys(parsed.freightCosts).length > 0) {
-        updateFreightCosts({ ...current.freightCosts, ...parsed.freightCosts });
+      // Apply freight tiers directly to store (keyed by contract number)
+      if (Object.keys(parsed.freightTiers).length > 0) {
+        updateFreightTiers({ ...current.freightTiers, ...parsed.freightTiers });
       }
 
       const parts: string[] = [];
@@ -123,7 +123,7 @@ export function DailyInputs() {
       if (parsed.settlements.length > 0) parts.push(`${parsed.settlements.length} settlements`);
       if (Object.keys(parsed.inTransit).length > 0) parts.push('in-transit');
       if (Object.keys(parsed.htaPaired).length > 0) parts.push('HTA-paired');
-      if (Object.keys(parsed.freightCosts).length > 0) parts.push(`${Object.keys(parsed.freightCosts).length} freight costs`);
+      if (Object.keys(parsed.freightTiers).length > 0) parts.push(`${Object.keys(parsed.freightTiers).length} freight tiers`);
 
       const summary = parts.length > 0
         ? `Loaded ${parts.join(', ')} from ${file.name}. Review values below and click Save All.`
@@ -169,7 +169,7 @@ export function DailyInputs() {
         entity: r.entity,
         freightTerm: r.freightTerm,
         balance: r.balance,
-        freightCost: r.freightCost,
+        freightTier: r.freightTier,
       })),
     };
 

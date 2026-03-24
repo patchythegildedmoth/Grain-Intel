@@ -4,6 +4,7 @@ import { useMarketDataStore } from '../store/useMarketDataStore';
 import { groupBy } from '../utils/groupBy';
 import { getDeliveryMonth } from '../utils/futureMonth';
 import { sortByCommodityOrder } from '../utils/commodityColors';
+import { getFreightCost } from '../utils/freightTiers';
 import { weightedAverage } from '../utils/weightedAverage';
 import {
   calcPricedPurchaseM2M,
@@ -73,7 +74,7 @@ export interface M2MAlert {
 
 export function useMarkToMarket() {
   const contracts = useContractStore((s) => s.contracts);
-  const { settlements, sellBasis, inTransit, htaPaired, freightCosts } = useMarketDataStore((s) => s.current);
+  const { settlements, sellBasis, inTransit, htaPaired, freightTiers } = useMarketDataStore((s) => s.current);
   const hasMarketData = useMarketDataStore((s) => s.lastUpdated !== null);
 
   return useMemo(() => {
@@ -99,9 +100,9 @@ export function useMarkToMarket() {
       const deliveryMonth = getDeliveryMonth(c.endDate) ?? 'Unknown';
       const currentFutures = settlementMap.get(`${c.commodityCode}|${c.futureMonthShort}`) ?? null;
       const rawSellBasis = basisMap.get(`${c.commodityCode}|${deliveryMonth}`) ?? null;
-      // Freight adjustment: FOB/Pickup contracts have freight deducted from sell basis
-      const isPickedUp = c.freightTerm === 'FOB' || c.freightTerm === 'Pickup' || c.freightTerm === 'Picked Up';
-      const freightCost = isPickedUp ? (freightCosts?.[c.contractNumber] ?? 0) : 0;
+      // Freight adjustment: look up tier from Excel upload > iRely column > none
+      const tier = freightTiers?.[c.contractNumber] ?? c.freightTier ?? null;
+      const freightCost = getFreightCost(tier);
       const currentSellBasis = rawSellBasis !== null && freightCost > 0
         ? rawSellBasis - freightCost
         : rawSellBasis;
@@ -364,7 +365,7 @@ export function useMarkToMarket() {
       hasMarketData,
       allContracts: allContractM2M,
     };
-  }, [contracts, settlements, sellBasis, inTransit, htaPaired, freightCosts, hasMarketData]);
+  }, [contracts, settlements, sellBasis, inTransit, htaPaired, freightTiers, hasMarketData]);
 }
 
 function formatDollar(n: number): string {
