@@ -28,28 +28,53 @@ export function ScenarioPanel() {
     return prices;
   }, [contracts]);
 
+  // Compute default basis (current avg basis per commodity)
+  const defaultBasis = useMemo(() => {
+    const openContracts = contracts.filter((c) => c.isOpen);
+    const basis: Record<string, number> = {};
+    const commodities = new Set<string>();
+    for (const c of openContracts) commodities.add(c.commodityCode);
+
+    for (const commodity of commodities) {
+      const group = openContracts.filter((c) => c.commodityCode === commodity);
+      const avg = weightedAverage(group.map((c) => ({ value: c.basis, weight: c.balance })));
+      basis[commodity] = avg !== null ? Math.round(avg * 100) / 100 : 0;
+    }
+    return basis;
+  }, [contracts]);
+
   const [scenarioPrices, setScenarioPrices] = useState<Record<string, number>>(defaultPrices);
+  const [scenarioBasisState, setScenarioBasisState] = useState<Record<string, number>>(defaultBasis);
 
   // Sync defaults when data changes
   useEffect(() => {
     setScenarioPrices(defaultPrices);
-  }, [defaultPrices]);
+    setScenarioBasisState(defaultBasis);
+  }, [defaultPrices, defaultBasis]);
 
   const debounceRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   const handlePriceChange = useCallback((commodity: string, value: number) => {
-    // Debounce slider updates
     if (debounceRef.current[commodity]) clearTimeout(debounceRef.current[commodity]);
     debounceRef.current[commodity] = setTimeout(() => {
       setScenarioPrices((prev) => ({ ...prev, [commodity]: value }));
     }, 50);
   }, []);
 
+  const handleBasisChange = useCallback((commodity: string, value: number) => {
+    const key = `basis_${commodity}`;
+    if (debounceRef.current[key]) clearTimeout(debounceRef.current[key]);
+    debounceRef.current[key] = setTimeout(() => {
+      setScenarioBasisState((prev) => ({ ...prev, [commodity]: value }));
+    }, 50);
+  }, []);
+
   const handleReset = useCallback(() => {
     setScenarioPrices(defaultPrices);
-  }, [defaultPrices]);
+    setScenarioBasisState(defaultBasis);
+  }, [defaultPrices, defaultBasis]);
 
-  const { scenarios, totalPnl, commodities } = useScenario(scenarioPrices);
+  const { scenarios, totalPnl, commodities } = useScenario(scenarioPrices, scenarioBasisState);
   const { totalNetExposure, commoditySummaries: exposureSummaries } = useUnpricedExposure();
 
   // Compute net exposure dollar impact from scenario price changes
@@ -156,45 +181,76 @@ export function ScenarioPanel() {
 
       {/* Price sliders */}
       <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-        <h3 className="text-lg font-semibold mb-4">Futures Price Adjustments</h3>
+        <h3 className="text-lg font-semibold mb-4">Price Adjustments</h3>
         <div className="space-y-6">
           {sortedCommodities.map((commodity) => {
-            const current = defaultPrices[commodity] || 5;
-            const scenario = scenarioPrices[commodity] ?? current;
-            const change = scenario - current;
+            const currentFut = defaultPrices[commodity] || 5;
+            const scenarioFut = scenarioPrices[commodity] ?? currentFut;
+            const futChange = scenarioFut - currentFut;
+            const currentBas = defaultBasis[commodity] || 0;
+            const scenarioBas = scenarioBasisState[commodity] ?? currentBas;
+            const basChange = scenarioBas - currentBas;
             return (
-              <div key={commodity} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(commodity) }} />
-                    <span className="font-medium">{commodity}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="text-gray-500 dark:text-gray-400">
-                      Current: {formatCurrency(current)}
-                    </span>
-                    <span className="font-semibold">
-                      Scenario: {formatCurrency(scenario)}
-                    </span>
-                    {change !== 0 && (
-                      <span className={change > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
-                        ({change > 0 ? '+' : ''}{formatCurrency(change)})
-                      </span>
-                    )}
-                  </div>
+              <div key={commodity} className="space-y-3 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-0 last:pb-0">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(commodity) }} />
+                  <span className="font-medium">{commodity}</span>
                 </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={25}
-                  step={0.05}
-                  value={scenario}
-                  onChange={(e) => handlePriceChange(commodity, parseFloat(e.target.value))}
-                  className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-                <div className="flex justify-between text-xs text-gray-400">
-                  <span>$0.00</span>
-                  <span>$25.00</span>
+                {/* Futures slider */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase">Futures</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-500 dark:text-gray-400">
+                        Current: {formatCurrency(currentFut)}
+                      </span>
+                      <span className="font-semibold">
+                        {formatCurrency(scenarioFut)}
+                      </span>
+                      {futChange !== 0 && (
+                        <span className={futChange > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                          ({futChange > 0 ? '+' : ''}{formatCurrency(futChange)})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={0}
+                    max={25}
+                    step={0.05}
+                    value={scenarioFut}
+                    onChange={(e) => handlePriceChange(commodity, parseFloat(e.target.value))}
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                  />
+                </div>
+                {/* Basis slider */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase">Basis</span>
+                    <div className="flex items-center gap-3">
+                      <span className="text-gray-500 dark:text-gray-400">
+                        Current: {formatCurrency(currentBas)}
+                      </span>
+                      <span className="font-semibold">
+                        {formatCurrency(scenarioBas)}
+                      </span>
+                      {basChange !== 0 && (
+                        <span className={basChange > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                          ({basChange > 0 ? '+' : ''}{formatCurrency(basChange)})
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <input
+                    type="range"
+                    min={-3}
+                    max={5}
+                    step={0.01}
+                    value={scenarioBas}
+                    onChange={(e) => handleBasisChange(commodity, parseFloat(e.target.value))}
+                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
                 </div>
               </div>
             );
@@ -217,8 +273,13 @@ export function ScenarioPanel() {
                   {sc.totalPnl > 0 ? '+' : ''}{formatCurrency(sc.totalPnl)}
                 </span>
                 {sc.priceChange !== 0 && (
-                  <AlertBadge level={sc.totalPnl >= 0 ? 'ok' : 'warning'}>
-                    {sc.priceChange > 0 ? '+' : ''}{formatCurrency(sc.priceChange)}/bu
+                  <AlertBadge level={sc.futuresPnl >= 0 ? 'ok' : 'warning'}>
+                    F: {sc.priceChange > 0 ? '+' : ''}{formatCurrency(sc.priceChange)}/bu
+                  </AlertBadge>
+                )}
+                {sc.basisChange !== 0 && (
+                  <AlertBadge level={sc.basisPnl >= 0 ? 'ok' : 'warning'}>
+                    B: {sc.basisChange > 0 ? '+' : ''}{formatCurrency(sc.basisChange)}/bu
                   </AlertBadge>
                 )}
               </div>
@@ -258,9 +319,18 @@ export function ScenarioPanel() {
                     </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{impact.explanation}</p>
                   </div>
-                  <span className={`font-semibold text-sm ${impact.pnlImpact > 0 ? 'text-green-600 dark:text-green-400' : impact.pnlImpact < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                    {impact.pnlImpact === 0 ? '$0.00' : `${impact.pnlImpact > 0 ? '+' : ''}${formatCurrency(impact.pnlImpact)}`}
-                  </span>
+                  <div className="text-right">
+                    <span className={`font-semibold text-sm ${impact.pnlImpact > 0 ? 'text-green-600 dark:text-green-400' : impact.pnlImpact < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                      {impact.pnlImpact === 0 ? '$0.00' : `${impact.pnlImpact > 0 ? '+' : ''}${formatCurrency(impact.pnlImpact)}`}
+                    </span>
+                    {(impact.futuresImpact !== 0 || impact.basisImpact !== 0) && impact.pnlImpact !== 0 && (
+                      <div className="text-xs text-gray-400 dark:text-gray-500">
+                        {impact.futuresImpact !== 0 && <span>F: {impact.futuresImpact > 0 ? '+' : ''}{formatCurrency(impact.futuresImpact)}</span>}
+                        {impact.futuresImpact !== 0 && impact.basisImpact !== 0 && <span> · </span>}
+                        {impact.basisImpact !== 0 && <span>B: {impact.basisImpact > 0 ? '+' : ''}{formatCurrency(impact.basisImpact)}</span>}
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

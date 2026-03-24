@@ -10,23 +10,30 @@ export interface ScenarioImpact {
   currentAvgFutures: number | null;
   scenarioFutures: number;
   pnlImpact: number;
+  futuresImpact: number;
+  basisImpact: number;
   explanation: string;
 }
 
 export interface CommodityScenario {
   commodity: string;
   currentAvgFutures: number | null;
+  currentAvgBasis: number | null;
   scenarioPrice: number;
+  scenarioBasis: number;
   priceChange: number;
+  basisChange: number;
   impacts: ScenarioImpact[];
   totalPnl: number;
+  futuresPnl: number;
+  basisPnl: number;
   basisContracts: number;
   htaContracts: number;
   pricedContracts: number;
   cashContracts: number;
 }
 
-export function useScenario(scenarioPrices: Record<string, number>) {
+export function useScenario(scenarioPrices: Record<string, number>, scenarioBasis: Record<string, number>) {
   const contracts = useContractStore((s) => s.contracts);
 
   return useMemo(() => {
@@ -60,14 +67,38 @@ export function useScenario(scenarioPrices: Record<string, number>) {
       currentAvgFutures.set(commodity, entry && entry.weight > 0 ? entry.sum / entry.weight : null);
     }
 
+    // Compute current avg basis per commodity
+    const currentBasisMap = new Map<string, { sum: number; weight: number }>();
+    for (const c of openContracts) {
+      if (c.basis !== null && c.basis !== undefined && c.balance > 0) {
+        if (!currentBasisMap.has(c.commodityCode)) {
+          currentBasisMap.set(c.commodityCode, { sum: 0, weight: 0 });
+        }
+        const entry = currentBasisMap.get(c.commodityCode)!;
+        entry.sum += c.basis * c.balance;
+        entry.weight += c.balance;
+      }
+    }
+
+    const currentAvgBasisMap = new Map<string, number | null>();
+    for (const commodity of commodities) {
+      const entry = currentBasisMap.get(commodity);
+      currentAvgBasisMap.set(commodity, entry && entry.weight > 0 ? entry.sum / entry.weight : null);
+    }
+
     const scenarios: CommodityScenario[] = commodities.map((commodity) => {
       const group = byCommodity.get(commodity)!;
       const currentAvg = currentAvgFutures.get(commodity) || null;
+      const currentBasis = currentAvgBasisMap.get(commodity) || null;
       const scenarioPrice = scenarioPrices[commodity] ?? (currentAvg ?? 5);
+      const scenBasis = scenarioBasis[commodity] ?? (currentBasis ?? 0);
       const priceChange = currentAvg !== null ? scenarioPrice - currentAvg : 0;
+      const basisChange = currentBasis !== null ? scenBasis - currentBasis : 0;
 
       const impacts: ScenarioImpact[] = [];
       let totalPnl = 0;
+      let totalFuturesPnl = 0;
+      let totalBasisPnl = 0;
       let basisCount = 0;
       let htaCount = 0;
       let pricedCount = 0;
@@ -83,46 +114,56 @@ export function useScenario(scenarioPrices: Record<string, number>) {
       for (const [pricingType, typeGroup] of byType) {
         const totalBushels = typeGroup.reduce((s, c) => s + c.balance, 0);
         const contractCount = typeGroup.length;
-        let pnlImpact = 0;
+        let futuresImpact = 0;
+        let basisImpact = 0;
         let explanation = '';
 
         switch (pricingType) {
           case 'Basis': {
-            // Basis contracts: futures are unpriced. If futures move, their cost/revenue changes.
-            // Purchase Basis: higher futures = higher cost = negative impact
-            // Sale Basis: higher futures = higher revenue = positive impact
+            // Basis contracts: futures unpriced, basis locked.
+            // Futures move affects cost/revenue. Basis change does NOT affect (already locked).
             const purchaseBu = typeGroup.filter((c) => c.contractType === 'Purchase').reduce((s, c) => s + c.balance, 0);
             const saleBu = typeGroup.filter((c) => c.contractType === 'Sale').reduce((s, c) => s + c.balance, 0);
-            // Net exposure: sale bushels benefit from higher prices, purchase bushels hurt
-            pnlImpact = (saleBu - purchaseBu) * priceChange;
-            explanation = `Futures unpriced: ${purchaseBu > 0 ? `${(purchaseBu / 1000).toFixed(0)}K buy` : ''}${purchaseBu > 0 && saleBu > 0 ? ', ' : ''}${saleBu > 0 ? `${(saleBu / 1000).toFixed(0)}K sell` : ''} exposed to futures movement`;
+            futuresImpact = (saleBu - purchaseBu) * priceChange;
+            basisImpact = 0; // basis is locked on these
+            explanation = `Futures unpriced: ${purchaseBu > 0 ? `${(purchaseBu / 1000).toFixed(0)}K buy` : ''}${purchaseBu > 0 && saleBu > 0 ? ', ' : ''}${saleBu > 0 ? `${(saleBu / 1000).toFixed(0)}K sell` : ''} exposed to futures. Basis locked — not affected by basis change.`;
             basisCount += contractCount;
             break;
           }
           case 'HTA': {
-            // HTA: futures are locked, basis is unpriced. Futures movement doesn't affect P&L.
-            pnlImpact = 0;
-            explanation = 'Futures locked, basis unpriced — not affected by futures change';
+            // HTA: futures locked, basis unpriced. Basis changes affect P&L.
+            // Purchase HTA: higher sell basis = more revenue when basis is set = positive
+            // Sale HTA: higher sell basis = higher market basis = cost to close increases = negative
+            const purchaseBu = typeGroup.filter((c) => c.contractType === 'Purchase').reduce((s, c) => s + c.balance, 0);
+            const saleBu = typeGroup.filter((c) => c.contractType === 'Sale').reduce((s, c) => s + c.balance, 0);
+            futuresImpact = 0; // futures locked
+            basisImpact = (purchaseBu - saleBu) * basisChange;
+            explanation = `Basis unpriced: ${purchaseBu > 0 ? `${(purchaseBu / 1000).toFixed(0)}K buy` : ''}${purchaseBu > 0 && saleBu > 0 ? ', ' : ''}${saleBu > 0 ? `${(saleBu / 1000).toFixed(0)}K sell` : ''} exposed to basis movement. Futures locked.`;
             htaCount += contractCount;
             break;
           }
           case 'Priced': {
-            // Fully priced: no exposure
-            pnlImpact = 0;
-            explanation = 'Fully priced — no futures exposure';
+            // Fully priced: no futures or basis exposure
+            futuresImpact = 0;
+            basisImpact = 0;
+            explanation = 'Fully priced — no futures or basis exposure';
             pricedCount += contractCount;
             break;
           }
           case 'Cash': {
-            // Cash: no futures component
-            pnlImpact = 0;
-            explanation = 'Cash contract — no futures component';
+            // Cash: no decomposition
+            futuresImpact = 0;
+            basisImpact = 0;
+            explanation = 'Cash contract — no futures or basis component';
             cashCount += contractCount;
             break;
           }
         }
 
+        const pnlImpact = futuresImpact + basisImpact;
         totalPnl += pnlImpact;
+        totalFuturesPnl += futuresImpact;
+        totalBasisPnl += basisImpact;
 
         impacts.push({
           commodity,
@@ -132,6 +173,8 @@ export function useScenario(scenarioPrices: Record<string, number>) {
           currentAvgFutures: currentAvg,
           scenarioFutures: scenarioPrice,
           pnlImpact,
+          futuresImpact,
+          basisImpact,
           explanation,
         });
       }
@@ -139,10 +182,15 @@ export function useScenario(scenarioPrices: Record<string, number>) {
       return {
         commodity,
         currentAvgFutures: currentAvg,
+        currentAvgBasis: currentBasis,
         scenarioPrice,
+        scenarioBasis: scenBasis,
         priceChange,
+        basisChange,
         impacts,
         totalPnl,
+        futuresPnl: totalFuturesPnl,
+        basisPnl: totalBasisPnl,
         basisContracts: basisCount,
         htaContracts: htaCount,
         pricedContracts: pricedCount,
