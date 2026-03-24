@@ -47,6 +47,7 @@ export function useDailyInputScaffold() {
         settlementRows: [] as ScaffoldSettlementRow[],
         commodities: [] as string[],
         gaps: [] as MissingDataGap[],
+        freightRows: [] as { contractNumber: string; commodity: string; entity: string; freightTerm: string; balance: number; freightCost: number | null }[],
       };
     }
 
@@ -155,6 +156,23 @@ export function useDailyInputScaffold() {
       }
     }
 
-    return { basisRows, settlementRows, commodities, gaps };
+    // --- Freight rows: FOB/Pickup contracts need freight cost ---
+    const freightRows = openContracts
+      .filter((c) => c.freightTerm === 'FOB' || c.freightTerm === 'Pickup' || c.freightTerm === 'Picked Up')
+      .map((c) => ({
+        contractNumber: c.contractNumber,
+        commodity: c.commodityCode,
+        entity: c.entity,
+        freightTerm: c.freightTerm ?? '',
+        balance: c.balance,
+        freightCost: current.freightCosts?.[c.contractNumber] ?? null,
+      }))
+      .sort((a, b) => {
+        const commodityDiff = sortByCommodityOrder(a.commodity, b.commodity);
+        if (commodityDiff !== 0) return commodityDiff;
+        return a.entity.localeCompare(b.entity);
+      });
+
+    return { basisRows, settlementRows, commodities, gaps, freightRows };
   }, [contracts, isLoaded, current]);
 }

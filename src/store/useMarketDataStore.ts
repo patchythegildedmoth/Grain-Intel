@@ -15,6 +15,7 @@ interface MarketDataState {
   updateSettlements: (entries: FuturesSettlement[]) => void;
   updateInTransit: (values: Record<string, number>) => void;
   updateHtaPaired: (values: Record<string, number>) => void;
+  updateFreightCosts: (values: Record<string, number>) => void;
   saveCurrentInputs: () => void;
   saveM2MSnapshot: (snapshot: Omit<M2MSnapshot, 'timestamp'>) => void;
   getInputsForDate: (date: string) => DailyMarketInputs | null;
@@ -69,6 +70,12 @@ export const useMarketDataStore = create<MarketDataState>()(
       updateHtaPaired: (values) =>
         set((s) => ({
           current: { ...s.current, htaPaired: values },
+          lastUpdated: new Date().toISOString(),
+        })),
+
+      updateFreightCosts: (values) =>
+        set((s) => ({
+          current: { ...s.current, freightCosts: values },
           lastUpdated: new Date().toISOString(),
         })),
 

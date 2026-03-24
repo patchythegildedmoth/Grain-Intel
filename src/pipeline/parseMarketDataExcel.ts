@@ -6,6 +6,7 @@ export interface ParsedMarketData {
   settlements: FuturesSettlement[];
   inTransit: Record<string, number>;
   htaPaired: Record<string, number>;
+  freightCosts: Record<string, number>; // keyed by contractNumber
   warnings: string[];
 }
 
@@ -73,8 +74,9 @@ function parseMultiSheet(wb: XLSX.WorkBook, warnings: string[]): ParsedMarketDat
   const settlements = parseSettlementSheet(findSheet(wb, 'settlement'), warnings);
   const inTransit = parseBushelSheet(findSheet(wb, 'transit'), 'In-Transit', warnings);
   const htaPaired = parseBushelSheet(findSheet(wb, 'hta') ?? findSheet(wb, 'paired'), 'HTA-Paired', warnings);
+  const freightCosts = parseFreightSheet(findSheet(wb, 'freight'), warnings);
 
-  return { sellBasis, settlements, inTransit, htaPaired, warnings };
+  return { sellBasis, settlements, inTransit, htaPaired, freightCosts, warnings };
 }
 
 function parseBasisSheet(ws: XLSX.WorkSheet | null, warnings: string[]): MarketBasisEntry[] {
@@ -184,6 +186,33 @@ function parseBushelSheet(ws: XLSX.WorkSheet | null, label: string, warnings: st
   return result;
 }
 
+function parseFreightSheet(ws: XLSX.WorkSheet | null, warnings: string[]): Record<string, number> {
+  if (!ws) return {};
+
+  const rows = sheetToRows(ws);
+  if (rows.length === 0) return {};
+
+  const headers = Object.keys(rows[0]);
+  const contractCol = findCol(headers, 'contractnumber', 'contract number', 'contract', 'contractno', 'contract no', 'contract#');
+  const freightCol = findCol(headers, 'freight', 'freightcost', 'freight cost', 'freight$/bu', 'freightperbu', 'cost');
+
+  if (!contractCol || !freightCol) {
+    warnings.push('Freight sheet: missing "Contract Number" or "Freight Cost" column');
+    return {};
+  }
+
+  const result: Record<string, number> = {};
+  for (const row of rows) {
+    const contractNumber = trimStr(row[contractCol]);
+    const cost = toNumber(row[freightCol]);
+    if (contractNumber && cost !== null && cost >= 0) {
+      result[contractNumber] = cost;
+    }
+  }
+
+  return result;
+}
+
 // ---------------------------------------------------------------------------
 // Single-sheet parser — looks for section headers
 // ---------------------------------------------------------------------------
@@ -192,7 +221,7 @@ function parseSingleSheet(wb: XLSX.WorkBook, warnings: string[]): ParsedMarketDa
   const ws = wb.Sheets[wb.SheetNames[0]];
   if (!ws) {
     warnings.push('Workbook has no sheets');
-    return { sellBasis: [], settlements: [], inTransit: {}, htaPaired: {}, warnings };
+    return { sellBasis: [], settlements: [], inTransit: {}, htaPaired: {}, freightCosts: {}, warnings };
   }
 
   // Read as array-of-arrays so we can scan for section markers
@@ -224,15 +253,15 @@ function parseSingleSheet(wb: XLSX.WorkBook, warnings: string[]): ParsedMarketDa
 
       if (hasBasis) {
         const sellBasis = parseBasisSheet(ws, warnings);
-        return { sellBasis, settlements: [], inTransit: {}, htaPaired: {}, warnings };
+        return { sellBasis, settlements: [], inTransit: {}, htaPaired: {}, freightCosts: {}, warnings };
       }
       if (hasPrice) {
         const settlements = parseSettlementSheet(ws, warnings);
-        return { sellBasis: [], settlements, inTransit: {}, htaPaired: {}, warnings };
+        return { sellBasis: [], settlements, inTransit: {}, htaPaired: {}, freightCosts: {}, warnings };
       }
     }
     warnings.push('Could not determine data format. Please use the downloadable template.');
-    return { sellBasis: [], settlements: [], inTransit: {}, htaPaired: {}, warnings };
+    return { sellBasis: [], settlements: [], inTransit: {}, htaPaired: {}, freightCosts: {}, warnings };
   }
 
   // Build sub-worksheets from the sections
@@ -264,7 +293,7 @@ function parseSingleSheet(wb: XLSX.WorkBook, warnings: string[]): ParsedMarketDa
   const inTransit = parseBushelSheet(makeSheet(getSection('inTransit')), 'In-Transit', warnings);
   const htaPaired = parseBushelSheet(makeSheet(getSection('htaPaired')), 'HTA-Paired', warnings);
 
-  return { sellBasis, settlements, inTransit, htaPaired, warnings };
+  return { sellBasis, settlements, inTransit, htaPaired, freightCosts: {}, warnings };
 }
 
 // ---------------------------------------------------------------------------
@@ -277,6 +306,7 @@ export interface TemplateData {
   commodities: string[];
   inTransit: Record<string, number>;
   htaPaired: Record<string, number>;
+  freightRows: { contractNumber: string; commodity: string; entity: string; freightTerm: string; balance: number; freightCost: number | null }[];
 }
 
 export function generateMarketDataTemplate(data: TemplateData): ArrayBuffer {
@@ -308,6 +338,17 @@ export function generateMarketDataTemplate(data: TemplateData): ArrayBuffer {
   const htaWs = XLSX.utils.aoa_to_sheet(htaData);
   htaWs['!cols'] = [{ wch: 14 }, { wch: 12 }];
   XLSX.utils.book_append_sheet(wb, htaWs, 'HTA-Paired');
+
+  // Sheet 4: Freight Costs (FOB/Pickup contracts)
+  if (data.freightRows.length > 0) {
+    const freightData = [
+      ['Contract Number', 'Commodity', 'Entity', 'Freight Term', 'Balance', 'Freight Cost'],
+      ...data.freightRows.map((r) => [r.contractNumber, r.commodity, r.entity, r.freightTerm, r.balance, r.freightCost ?? 0.80]),
+    ];
+    const freightWs = XLSX.utils.aoa_to_sheet(freightData);
+    freightWs['!cols'] = [{ wch: 16 }, { wch: 14 }, { wch: 24 }, { wch: 12 }, { wch: 12 }, { wch: 14 }];
+    XLSX.utils.book_append_sheet(wb, freightWs, 'Freight');
+  }
 
   return XLSX.write(wb, { type: 'array', bookType: 'xlsx' });
 }

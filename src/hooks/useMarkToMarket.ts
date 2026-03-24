@@ -73,7 +73,7 @@ export interface M2MAlert {
 
 export function useMarkToMarket() {
   const contracts = useContractStore((s) => s.contracts);
-  const { settlements, sellBasis, inTransit, htaPaired } = useMarketDataStore((s) => s.current);
+  const { settlements, sellBasis, inTransit, htaPaired, freightCosts } = useMarketDataStore((s) => s.current);
   const hasMarketData = useMarketDataStore((s) => s.lastUpdated !== null);
 
   return useMemo(() => {
@@ -98,7 +98,13 @@ export function useMarkToMarket() {
     const allContractM2M: ContractM2M[] = openContracts.map((c) => {
       const deliveryMonth = getDeliveryMonth(c.endDate) ?? 'Unknown';
       const currentFutures = settlementMap.get(`${c.commodityCode}|${c.futureMonthShort}`) ?? null;
-      const currentSellBasis = basisMap.get(`${c.commodityCode}|${deliveryMonth}`) ?? null;
+      const rawSellBasis = basisMap.get(`${c.commodityCode}|${deliveryMonth}`) ?? null;
+      // Freight adjustment: FOB/Pickup contracts have freight deducted from sell basis
+      const isPickedUp = c.freightTerm === 'FOB' || c.freightTerm === 'Pickup' || c.freightTerm === 'Picked Up';
+      const freightCost = isPickedUp ? (freightCosts?.[c.contractNumber] ?? 0) : 0;
+      const currentSellBasis = rawSellBasis !== null && freightCost > 0
+        ? rawSellBasis - freightCost
+        : rawSellBasis;
       const currentMarketValue =
         currentFutures !== null && currentSellBasis !== null
           ? currentFutures + currentSellBasis
@@ -358,7 +364,7 @@ export function useMarkToMarket() {
       hasMarketData,
       allContracts: allContractM2M,
     };
-  }, [contracts, settlements, sellBasis, inTransit, htaPaired, hasMarketData]);
+  }, [contracts, settlements, sellBasis, inTransit, htaPaired, freightCosts, hasMarketData]);
 }
 
 function formatDollar(n: number): string {
