@@ -295,16 +295,39 @@ export function useMarkToMarket() {
 
       // Alerts per commodity
       if (totalPnl < 0) {
+        // Find biggest losing entity for context
+        const entityPnl = new Map<string, number>();
+        for (const cm of group) {
+          if (cm.m2m.isMarkable) {
+            const e = cm.contract.entity;
+            entityPnl.set(e, (entityPnl.get(e) ?? 0) + cm.m2m.totalPnl);
+          }
+        }
+        const worstEntity = [...entityPnl.entries()].sort((a, b) => a[1] - b[1])[0];
+        const entityNote = worstEntity ? ` — largest loss: ${worstEntity[0]} (${formatDollar(worstEntity[1])})` : '';
         alerts.push({
           severity: 'red',
-          message: `${commodity}: book P&L is negative (${formatDollar(totalPnl)})`,
+          message: `${commodity}: book P&L is negative (${formatDollar(totalPnl)})${entityNote}`,
         });
       }
       for (const fm of byFuturesMonth) {
         if (fm.totalPnl < -25_000) {
+          // Find top losing entities in this FM
+          const fmGroup2 = byFM.get(fm.sortKey) ?? [];
+          const fmEntityPnl = new Map<string, number>();
+          for (const cm of fmGroup2) {
+            if (cm.m2m.isMarkable) {
+              const e = cm.contract.entity;
+              fmEntityPnl.set(e, (fmEntityPnl.get(e) ?? 0) + cm.m2m.totalPnl);
+            }
+          }
+          const topLosers = [...fmEntityPnl.entries()].filter(([, v]) => v < 0).sort((a, b) => a[1] - b[1]).slice(0, 2);
+          const loserNote = topLosers.length > 0
+            ? ` — ${topLosers.map(([e, v]) => `${e} ${formatDollar(v)}`).join(', ')}`
+            : '';
           alerts.push({
             severity: 'amber',
-            message: `${commodity} ${fm.futuresMonth}: unrealized loss of ${formatDollar(fm.totalPnl)}`,
+            message: `${commodity} ${fm.futuresMonth}: unrealized loss of ${formatDollar(fm.totalPnl)} (${fm.contractCount} contracts, net ${fm.netBushels >= 0 ? '+' : ''}${formatBushels(fm.netBushels)})${loserNote}`,
           });
         }
         // Check basis/futures divergence
@@ -316,9 +339,21 @@ export function useMarkToMarket() {
         }
       }
       if (unmarkableCount > 0) {
+        // Detail WHY contracts are unmarked
+        const missingReasons = new Map<string, number>();
+        for (const cm of group) {
+          if (!cm.m2m.isMarkable && cm.m2m.missingReason) {
+            const reason = cm.m2m.missingReason;
+            missingReasons.set(reason, (missingReasons.get(reason) ?? 0) + 1);
+          }
+        }
+        const reasonDetail = [...missingReasons.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .map(([reason, count]) => `${count} ${reason}`)
+          .join(', ');
         alerts.push({
           severity: 'amber',
-          message: `${commodity}: ${unmarkableCount} contract${unmarkableCount > 1 ? 's' : ''} excluded — missing market data`,
+          message: `${commodity}: ${unmarkableCount} contract${unmarkableCount > 1 ? 's' : ''} excluded — ${reasonDetail}`,
         });
       }
 
@@ -370,4 +405,11 @@ export function useMarkToMarket() {
 
 function formatDollar(n: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+}
+
+function formatBushels(n: number): string {
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M bu`;
+  if (abs >= 1_000) return `${Math.round(n / 1_000)}K bu`;
+  return `${n} bu`;
 }
