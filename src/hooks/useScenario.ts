@@ -88,12 +88,16 @@ export function useScenario(scenarioPrices: Record<string, number>, scenarioBasi
 
     const scenarios: CommodityScenario[] = commodities.map((commodity) => {
       const group = byCommodity.get(commodity)!;
-      const currentAvg = currentAvgFutures.get(commodity) || null;
-      const currentBasis = currentAvgBasisMap.get(commodity) || null;
-      const scenarioPrice = scenarioPrices[commodity] ?? (currentAvg ?? 5);
-      const scenBasis = scenarioBasis[commodity] ?? (currentBasis ?? 0);
-      const priceChange = currentAvg !== null ? scenarioPrice - currentAvg : 0;
-      const basisChange = currentBasis !== null ? scenBasis - currentBasis : 0;
+      const currentAvg = currentAvgFutures.get(commodity) ?? null;
+      const currentBasis = currentAvgBasisMap.get(commodity) ?? null;
+      // Use current avg as default, falling back to 5 for futures and 0 for basis
+      const defaultFutures = currentAvg ?? 5;
+      const defaultBasis = currentBasis ?? 0;
+      const scenarioPrice = scenarioPrices[commodity] ?? defaultFutures;
+      const scenBasis = scenarioBasis[commodity] ?? defaultBasis;
+      // Always compute change from the default — even if currentAvg is null
+      const priceChange = scenarioPrice - defaultFutures;
+      const basisChange = scenBasis - defaultBasis;
 
       const impacts: ScenarioImpact[] = [];
       let totalPnl = 0;

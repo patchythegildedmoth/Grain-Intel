@@ -6,6 +6,7 @@ import { useCustomerAnalysis } from '../../hooks/useCustomerAnalysis';
 import { useRiskProfile } from '../../hooks/useRiskProfile';
 import { useMarkToMarket } from '../../hooks/useMarkToMarket';
 import { usePriceLaterExposure } from '../../hooks/usePriceLaterExposure';
+import { useFreightEfficiency } from '../../hooks/useFreightEfficiency';
 import { useContractStore } from '../../store/useContractStore';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
 import { StatCard } from '../shared/StatCard';
@@ -25,6 +26,7 @@ export function MorningBrief() {
   const { overallHedgeRatio, profiles } = useRiskProfile();
   const { totalBookPnl, totalOpenPnl } = useMarkToMarket();
   const { totalDailyCarry, summaries: priceLaterSummaries } = usePriceLaterExposure();
+  const { summaryAlerts: freightAlerts, blendedFreightCost, costTrend } = useFreightEfficiency();
   const hasMarketData = useMarketDataStore((s) => s.lastUpdated !== null);
 
   // Net exposure delta for Morning Brief KPI
@@ -61,6 +63,9 @@ export function MorningBrief() {
     for (const a of p.alerts.filter((a) => a.level === 'warning' || a.level === 'critical')) {
       criticalAlerts.push({ module: 'Risk', message: `${p.commodity}: ${a.message}` });
     }
+  }
+  for (const a of freightAlerts.filter((a) => a.level === 'critical')) {
+    criticalAlerts.push({ module: 'Freight', message: a.message });
   }
 
   return (
@@ -128,7 +133,7 @@ export function MorningBrief() {
 
       {/* M2M KPIs — only shown when market data exists, clickable */}
       {hasMarketData && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <a href="#mark-to-market" className="group">
             <StatCard
               label="💰 Book P&L"
@@ -175,6 +180,15 @@ export function MorningBrief() {
               )}
             </div>
           </div>
+          <a href="#freight-efficiency" className="group">
+            <StatCard
+              label="🚚 Avg Freight Cost"
+              value={blendedFreightCost !== null ? formatCurrency(blendedFreightCost) + '/bu' : '—'}
+              delta={costTrend.delta30d !== null ? `${costTrend.delta30d >= 0 ? '+' : ''}${formatCurrency(costTrend.delta30d)} vs 30d` : undefined}
+              deltaDirection={costTrend.delta30d !== null ? (costTrend.delta30d > 0.03 ? 'down' : costTrend.delta30d < -0.03 ? 'up' : 'neutral') : undefined}
+              colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+            />
+          </a>
         </div>
       )}
 
