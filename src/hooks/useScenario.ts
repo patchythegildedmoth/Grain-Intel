@@ -201,5 +201,5 @@ export function useScenario(scenarioPrices: Record<string, number>, scenarioBasi
     const totalPnl = scenarios.reduce((s, sc) => s + sc.totalPnl, 0);
 
     return { scenarios, totalPnl, commodities };
-  }, [contracts, scenarioPrices]);
+  }, [contracts, scenarioPrices, scenarioBasis]);
 }
