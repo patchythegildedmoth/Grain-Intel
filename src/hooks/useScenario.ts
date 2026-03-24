@@ -132,12 +132,13 @@ export function useScenario(scenarioPrices: Record<string, number>, scenarioBasi
           }
           case 'HTA': {
             // HTA: futures locked, basis unpriced. Basis changes affect P&L.
-            // Purchase HTA: higher sell basis = more revenue when basis is set = positive
-            // Sale HTA: higher sell basis = higher market basis = cost to close increases = negative
+            // Purchase HTA: higher basis = higher buy cost = negative impact
+            // Sale HTA: higher basis = higher sell revenue = positive impact
+            // Same sign convention as Basis contracts with futures: (saleBu - purchaseBu)
             const purchaseBu = typeGroup.filter((c) => c.contractType === 'Purchase').reduce((s, c) => s + c.balance, 0);
             const saleBu = typeGroup.filter((c) => c.contractType === 'Sale').reduce((s, c) => s + c.balance, 0);
             futuresImpact = 0; // futures locked
-            basisImpact = (purchaseBu - saleBu) * basisChange;
+            basisImpact = (saleBu - purchaseBu) * basisChange;
             explanation = `Basis unpriced: ${purchaseBu > 0 ? `${(purchaseBu / 1000).toFixed(0)}K buy` : ''}${purchaseBu > 0 && saleBu > 0 ? ', ' : ''}${saleBu > 0 ? `${(saleBu / 1000).toFixed(0)}K sell` : ''} exposed to basis movement. Futures locked.`;
             htaCount += contractCount;
             break;
