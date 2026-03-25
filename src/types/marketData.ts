@@ -27,6 +27,8 @@ export interface M2MSnapshot {
   openPnl: number;
   dailyCarryCost: number;
   timestamp: string;
+  avgFreightCostPerBu?: number;
+  totalFreightAdjustedBushels?: number;
 }
 
 export interface MarketDataState {

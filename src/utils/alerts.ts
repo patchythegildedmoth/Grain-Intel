@@ -33,4 +33,11 @@ export const THRESHOLDS = {
 
   // Module 6: Risk Profile
   unpricedRatioThreshold: 0.30,
+
+  // Module 9: Freight Efficiency
+  freightPercentCritical: 0.50,
+  freightPercentWarning: 0.30,
+  freightExpensiveTierThreshold: 0.60,
+  freightCostTrendDelta: 0.05,
+  freightNegativeMarginContracts: 5,
 } as const;

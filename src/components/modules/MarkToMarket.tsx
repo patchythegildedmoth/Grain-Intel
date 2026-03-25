@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useMarkToMarket } from '../../hooks/useMarkToMarket';
 import { usePriceLaterExposure } from '../../hooks/usePriceLaterExposure';
+import { useFreightEfficiency } from '../../hooks/useFreightEfficiency';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
 import { StatCard } from '../shared/StatCard';
 import { AlertBadge } from '../shared/AlertBadge';
@@ -24,6 +25,7 @@ export function MarkToMarket() {
     allContracts,
   } = useMarkToMarket();
   const { totalDailyCarry } = usePriceLaterExposure();
+  const { blendedFreightCost, totalFreightAdjustedBushels } = useFreightEfficiency();
   const { m2mSnapshots, saveM2MSnapshot } = useMarketDataStore();
 
   // Snapshot M2M results for sparkline history
@@ -33,9 +35,11 @@ export function MarkToMarket() {
         totalPnl: totalBookPnl,
         openPnl: totalOpenPnl,
         dailyCarryCost: totalDailyCarry,
+        avgFreightCostPerBu: blendedFreightCost ?? undefined,
+        totalFreightAdjustedBushels: totalFreightAdjustedBushels || undefined,
       });
     }
-  }, [totalBookPnl, totalOpenPnl, totalDailyCarry, hasMarketData, saveM2MSnapshot]);
+  }, [totalBookPnl, totalOpenPnl, totalDailyCarry, blendedFreightCost, totalFreightAdjustedBushels, hasMarketData, saveM2MSnapshot]);
 
   if (!hasMarketData) {
     return (

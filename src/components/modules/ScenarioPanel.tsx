@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { useContractStore } from '../../store/useContractStore';
+import { useMarketDataStore } from '../../store/useMarketDataStore';
 import { useScenario } from '../../hooks/useScenario';
 import { useUnpricedExposure } from '../../hooks/useUnpricedExposure';
 import { StatCard } from '../shared/StatCard';
@@ -8,7 +9,11 @@ import { formatCurrency, formatBushelsShort } from '../../utils/formatters';
 import { getCommodityColor } from '../../utils/commodityColors';
 import { sortByCommodityOrder } from '../../utils/commodityColors';
 import { weightedAverage } from '../../utils/weightedAverage';
+import { FREIGHT_TIERS } from '../../utils/freightTiers';
+import { resolveContractFreight, calcMarginByTier } from '../../utils/freightMarginCalc';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from 'recharts';
+
+const TIER_LETTERS = Object.keys(FREIGHT_TIERS); // ['A', 'B', 'C', ...]
 
 export function ScenarioPanel() {
   const contracts = useContractStore((s) => s.contracts);
@@ -76,6 +81,53 @@ export function ScenarioPanel() {
 
   const { scenarios, totalPnl, commodities } = useScenario(scenarioPrices, scenarioBasisState);
   const { totalNetExposure, commoditySummaries: exposureSummaries } = useUnpricedExposure();
+
+  // Freight tier what-if
+  const [freightTierCap, setFreightTierCap] = useState<string | null>(null);
+  const sellBasis = useMarketDataStore((s) => s.current.sellBasis);
+  const freightTiers = useMarketDataStore((s) => s.current.freightTiers);
+
+  const freightWhatIf = useMemo(() => {
+    if (!freightTierCap) return null;
+
+    const enriched = resolveContractFreight(contracts, freightTiers, sellBasis);
+    if (enriched.length === 0) return null;
+
+    // Baseline margins
+    const baseline = calcMarginByTier(enriched);
+
+    // Build tier overrides: any contract with a tier > cap gets capped
+    const capIdx = TIER_LETTERS.indexOf(freightTierCap);
+    const overrides: Record<string, string> = {};
+    for (const c of enriched) {
+      if (c.resolvedTier) {
+        const tierIdx = TIER_LETTERS.indexOf(c.resolvedTier);
+        if (tierIdx > capIdx) {
+          overrides[c.contractNumber] = freightTierCap;
+        }
+      }
+    }
+
+    const whatIf = calcMarginByTier(enriched, overrides);
+
+    // Compute total margin delta
+    const baselineTotal = baseline.reduce((s, m) => {
+      const tierTotal = m.tiers.reduce((ts, t) => ts + (t.totalNetMargin ?? 0), 0);
+      return s + tierTotal;
+    }, 0);
+    const whatIfTotal = whatIf.reduce((s, m) => {
+      const tierTotal = m.tiers.reduce((ts, t) => ts + (t.totalNetMargin ?? 0), 0);
+      return s + tierTotal;
+    }, 0);
+
+    const contractsAffected = Object.keys(overrides).length;
+
+    return {
+      marginDelta: whatIfTotal - baselineTotal,
+      contractsAffected,
+      hasSellBasis: sellBasis.length > 0,
+    };
+  }, [contracts, freightTiers, sellBasis, freightTierCap]);
 
   // Compute net exposure dollar impact from scenario price changes
   const netExposureImpact = useMemo(() => {
@@ -255,6 +307,43 @@ export function ScenarioPanel() {
               </div>
             );
           })}
+        </div>
+      </div>
+
+      {/* Freight Tier What-If */}
+      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <h3 className="text-lg font-semibold mb-3">🚚 Freight Tier Cap</h3>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          What if all contracts above a certain tier were capped? See the margin impact of renegotiating freight terms.
+        </p>
+        <div className="flex items-center gap-4">
+          <label className="text-sm font-medium whitespace-nowrap">Cap at tier:</label>
+          <select
+            value={freightTierCap ?? ''}
+            onChange={(e) => setFreightTierCap(e.target.value || null)}
+            className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+          >
+            <option value="">No cap (current)</option>
+            {TIER_LETTERS.filter((t) => t !== 'A').map((tier) => (
+              <option key={tier} value={tier}>
+                Tier {tier} (${FREIGHT_TIERS[tier].toFixed(2)}/bu max)
+              </option>
+            ))}
+          </select>
+          {freightWhatIf && freightWhatIf.hasSellBasis && (
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-gray-500 dark:text-gray-400">
+                {freightWhatIf.contractsAffected} contracts affected
+              </span>
+              <span className={`font-semibold ${freightWhatIf.marginDelta > 0 ? 'text-green-600 dark:text-green-400' : freightWhatIf.marginDelta < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+                {freightWhatIf.marginDelta > 0 ? '+' : ''}
+                {formatCurrency(freightWhatIf.marginDelta)} margin impact
+              </span>
+            </div>
+          )}
+          {freightWhatIf && !freightWhatIf.hasSellBasis && (
+            <span className="text-sm text-gray-400">Enter sell basis in Daily Inputs to see margin impact</span>
+          )}
         </div>
       </div>
 

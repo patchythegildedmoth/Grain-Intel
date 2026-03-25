@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { id: 'daily-inputs', label: 'Daily Inputs', icon: '✏️', group: 'market' },
   { id: 'price-later', label: '7. Price-Later', icon: '⏳', group: 'market' },
   { id: 'mark-to-market', label: '8. Mark-to-Market', icon: '💰', group: 'market' },
+  { id: 'freight-efficiency', label: '9. Freight Efficiency', icon: '🚚', group: 'market' },
   { id: 'scenario', label: 'What-If Scenario', icon: '🔮', group: 'tools' },
   { id: 'data-health', label: 'Data Health', icon: '🔍', group: 'tools' },
 ] as const;

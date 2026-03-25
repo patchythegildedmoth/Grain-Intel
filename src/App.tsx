@@ -15,6 +15,7 @@ import { DataHealth } from './components/modules/DataHealth';
 import { DailyInputs } from './components/modules/DailyInputs';
 import { PriceLaterExposure } from './components/modules/PriceLaterExposure';
 import { MarkToMarket } from './components/modules/MarkToMarket';
+import { FreightEfficiencyAnalysis } from './components/modules/FreightEfficiencyAnalysis';
 
 function getHashModule(): string {
   const hash = window.location.hash.replace('#', '');
@@ -118,6 +119,8 @@ export default function App() {
         return <PriceLaterExposure />;
       case 'mark-to-market':
         return <MarkToMarket />;
+      case 'freight-efficiency':
+        return <FreightEfficiencyAnalysis />;
       case 'data-health':
         return <DataHealth />;
       default:
