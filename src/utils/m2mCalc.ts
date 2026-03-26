@@ -160,7 +160,7 @@ export function calcCashM2M(
 /**
  * Return an unmarked result for contracts missing market data.
  */
-export function unmmarkableResult(reason: string): M2MResult {
+export function unmarkableResult(reason: string): M2MResult {
   return {
     totalPnl: 0,
     futuresPnl: null,

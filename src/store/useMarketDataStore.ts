@@ -115,6 +115,7 @@ export const useMarketDataStore = create<MarketDataState>()(
     }),
     {
       name: 'grain-intel-market-data',
+      version: 1,
       partialize: (state) => ({
         current: state.current,
         history: state.history,
@@ -122,6 +123,25 @@ export const useMarketDataStore = create<MarketDataState>()(
         lastUpdated: state.lastUpdated,
         proxyUrl: state.proxyUrl,
       }),
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Record<string, unknown>;
+        if (version === 0) {
+          // v0 → v1: add freightTiers field (was freightCosts or missing)
+          const current = state.current as Record<string, unknown> | undefined;
+          if (current && !current.freightTiers) {
+            current.freightTiers = {};
+            // Clean up old field name if it exists
+            delete current.freightCosts;
+          }
+        }
+        return state;
+      },
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          console.error('[MarketDataStore] Failed to rehydrate, clearing corrupted state:', error);
+          localStorage.removeItem('grain-intel-market-data');
+        }
+      },
     },
   ),
 );

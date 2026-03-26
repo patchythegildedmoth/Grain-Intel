@@ -130,7 +130,25 @@ export const useContractStore = create<ContractState>()(
     }),
     {
       name: 'grain-intel-store',
+      version: 1,
       partialize: (state) => ({ previousSnapshot: state.previousSnapshot }),
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as Record<string, unknown>;
+        if (version === 0) {
+          // v0 → v1: ensure exposure field exists on previousSnapshot
+          const snapshot = state.previousSnapshot as Record<string, unknown> | null;
+          if (snapshot && !snapshot.exposure) {
+            snapshot.exposure = {};
+          }
+        }
+        return state;
+      },
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          console.error('[ContractStore] Failed to rehydrate, clearing corrupted state:', error);
+          localStorage.removeItem('grain-intel-store');
+        }
+      },
     }
   )
 );
