@@ -1,6 +1,7 @@
-import { type ReactNode } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { DarkModeToggle } from './DarkModeToggle';
+import { AlertDrawer, AlertBellButton } from './AlertDrawer';
 import { useContractStore } from '../../store/useContractStore';
 
 interface AppShellProps {
@@ -13,6 +14,7 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
   const fileName = useContractStore((s) => s.fileName);
   const uploadDate = useContractStore((s) => s.uploadDate);
   const clearData = useContractStore((s) => s.clearData);
+  const [alertDrawerOpen, setAlertDrawerOpen] = useState(false);
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -41,6 +43,7 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
           </div>
         )}
 
+        <AlertBellButton onClick={() => setAlertDrawerOpen(!alertDrawerOpen)} />
         <DarkModeToggle />
       </header>
 
@@ -51,6 +54,13 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
           {children}
         </main>
       </div>
+
+      {/* Alert Drawer */}
+      <AlertDrawer
+        open={alertDrawerOpen}
+        onClose={() => setAlertDrawerOpen(false)}
+        onNavigate={(id) => { onModuleChange(id); setAlertDrawerOpen(false); }}
+      />
 
       {/* Footer */}
       <footer className="h-7 shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center px-4 text-xs text-gray-400 dark:text-gray-500 no-print">
