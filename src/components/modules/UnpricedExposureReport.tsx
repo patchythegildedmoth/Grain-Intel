@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import {
   useUnpricedExposure,
@@ -15,7 +15,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend,
   ComposedChart, Line, ReferenceLine,
 } from 'recharts';
-// FreightNetExposure type used via FuturesMonthExposure.freightBreakdown
+import { SegmentedControl } from '../shared/SegmentedControl';
 
 // --- Summary by type table ---
 const summaryCol = createColumnHelper<UnpricedSummaryRow>();
@@ -163,7 +163,14 @@ function formatNetLabel(net: number): string {
   return `${dir} ${formatBushelsShort(Math.abs(net))}`;
 }
 
+const EXPOSURE_TABS = [
+  { key: 'summary', label: 'Summary' },
+  { key: 'by-month', label: 'By Futures Month' },
+  { key: 'contracts', label: 'Contracts' },
+];
+
 export function UnpricedExposureReport() {
+  const [activeTab, setActiveTab] = useState('summary');
   const {
     commoditySummaries, totalExposure, totalNetExposure,
     totalOverdue, totalUrgent, totalContracts, previousExposure,
@@ -196,7 +203,9 @@ export function UnpricedExposureReport() {
         </span>
       </div>
 
-      {/* Summary cards */}
+      <SegmentedControl segments={EXPOSURE_TABS} activeKey={activeTab} onChange={setActiveTab} />
+
+      {/* Summary cards — always visible */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard label="Gross Exposure" value={formatBushelsShort(totalExposure)} />
         <StatCard
@@ -219,8 +228,8 @@ export function UnpricedExposureReport() {
         />
       </div>
 
-      {/* Exposure by commodity chart: gross + net */}
-      {chartData.length > 0 && (
+      {/* Exposure by commodity chart: summary tab only */}
+      {activeTab === 'summary' && chartData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <h3 className="text-lg font-semibold mb-3">Unpriced Exposure by Commodity</h3>
           <ResponsiveContainer width="100%" height={250}>
@@ -245,7 +254,7 @@ export function UnpricedExposureReport() {
         </div>
       )}
 
-      {/* Per-commodity sections */}
+      {/* Per-commodity sections — filtered by active tab */}
       {commoditySummaries.map((cs) => (
         <div key={cs.commodity} className="space-y-4">
           <div className="flex items-center gap-3 flex-wrap">
@@ -264,7 +273,7 @@ export function UnpricedExposureReport() {
             </span>
           </div>
 
-          {/* Alerts */}
+          {/* Alerts — always visible */}
           {cs.alerts.length > 0 && (
             <div className="space-y-1">
               {cs.alerts.map((alert, i) => (
@@ -278,74 +287,75 @@ export function UnpricedExposureReport() {
             </div>
           )}
 
-          {/* FM Netting Chart */}
-          {cs.futuresMonthBreakdown.length > 1 && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
-                Exposure by Futures Month
-              </h4>
-              <ResponsiveContainer width="100%" height={200}>
-                <ComposedChart
-                  data={cs.futuresMonthBreakdown}
-                  margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
-                >
-                  <XAxis dataKey="futureMonthShort" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
-                  <Tooltip formatter={(value: number) => formatBushelsShort(value)} />
-                  <Legend />
-                  <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
-                  <Bar dataKey="purchaseExposure" name="Purchase Unpriced" fill="#22C55E" fillOpacity={0.7} radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="saleExposure" name="Sale Unpriced" fill="#EF4444" fillOpacity={0.7} radius={[4, 4, 0, 0]} />
-                  <Line type="monotone" dataKey="netExposure" name="Net" stroke="#3B82F6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* FM Exposure Table */}
-          {cs.futuresMonthBreakdown.length > 0 && (
+          {/* Summary tab: type summary table */}
+          {activeTab === 'summary' && (
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-                Exposure by Futures Month
-              </h4>
+              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Summary by Type</h4>
               <DataTable
-                data={cs.futuresMonthBreakdown}
-                columns={fmColumns}
+                data={cs.summaryRows}
+                columns={summaryColumns}
                 footerRow={{
-                  futureMonthShort: 'TOTAL',
-                  purchaseExposure: formatBushelsShort(cs.purchaseExposure),
-                  saleExposure: formatBushelsShort(cs.saleExposure),
-                  grossExposure: formatBushelsShort(cs.totalExposure),
-                  netExposure: formatNetLabel(cs.netExposure),
+                  contractType: 'TOTAL',
                   contractCount: String(cs.contracts.length),
+                  totalExposureBushels: formatBushelsShort(cs.totalExposure),
+                  overdueCount: String(cs.overdueContracts),
+                  urgentCount: String(cs.urgentContracts),
                 }}
               />
             </div>
           )}
 
-          {/* Section A: Summary table */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Summary by Type</h4>
-            <DataTable
-              data={cs.summaryRows}
-              columns={summaryColumns}
-              footerRow={{
-                contractType: 'TOTAL',
-                contractCount: String(cs.contracts.length),
-                totalExposureBushels: formatBushelsShort(cs.totalExposure),
-                overdueCount: String(cs.overdueContracts),
-                urgentCount: String(cs.urgentContracts),
-              }}
-            />
-          </div>
+          {/* By Futures Month tab: FM chart + FM table */}
+          {activeTab === 'by-month' && (
+            <>
+              {cs.futuresMonthBreakdown.length > 1 && (
+                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                  <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+                    Exposure by Futures Month
+                  </h4>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <ComposedChart
+                      data={cs.futuresMonthBreakdown}
+                      margin={{ top: 5, right: 20, bottom: 5, left: 20 }}
+                    >
+                      <XAxis dataKey="futureMonthShort" tick={{ fontSize: 11 }} />
+                      <YAxis tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
+                      <Tooltip formatter={(value: number) => formatBushelsShort(value)} />
+                      <Legend />
+                      <ReferenceLine y={0} stroke="#666" strokeDasharray="3 3" />
+                      <Bar dataKey="purchaseExposure" name="Purchase Unpriced" fill="#22C55E" fillOpacity={0.7} radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="saleExposure" name="Sale Unpriced" fill="#EF4444" fillOpacity={0.7} radius={[4, 4, 0, 0]} />
+                      <Line type="monotone" dataKey="netExposure" name="Net" stroke="#3B82F6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              {cs.futuresMonthBreakdown.length > 0 && (
+                <DataTable
+                  data={cs.futuresMonthBreakdown}
+                  columns={fmColumns}
+                  footerRow={{
+                    futureMonthShort: 'TOTAL',
+                    purchaseExposure: formatBushelsShort(cs.purchaseExposure),
+                    saleExposure: formatBushelsShort(cs.saleExposure),
+                    grossExposure: formatBushelsShort(cs.totalExposure),
+                    netExposure: formatNetLabel(cs.netExposure),
+                    contractCount: String(cs.contracts.length),
+                  }}
+                />
+              )}
+            </>
+          )}
 
-          {/* Section B: Contract detail */}
-          <div>
-            <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
-              Contract Detail ({cs.contracts.length} contracts)
-            </h4>
-            <DataTable data={cs.contracts} columns={detailColumns} />
-          </div>
+          {/* Contracts tab: full detail table */}
+          {activeTab === 'contracts' && (
+            <div>
+              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                Contract Detail ({cs.contracts.length} contracts)
+              </h4>
+              <DataTable data={cs.contracts} columns={detailColumns} />
+            </div>
+          )}
         </div>
       ))}
 

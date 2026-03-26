@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useNetPosition, type PositionRow } from '../../hooks/useNetPosition';
+import { SegmentedControl } from '../shared/SegmentedControl';
 import { DataTable } from '../shared/DataTable';
 import { StatCard } from '../shared/StatCard';
 import { AlertBadge } from '../shared/AlertBadge';
@@ -74,7 +75,14 @@ const columns = [
   }),
 ];
 
+const TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'charts', label: 'Charts' },
+  { key: 'tables', label: 'Tables' },
+];
+
 export function NetPositionDashboard() {
+  const [activeTab, setActiveTab] = useState('overview');
   const { summaries, deltas, openContractCount } = useNetPosition();
 
   const totalLong = summaries.reduce((s, c) => s + c.totalLong, 0);
@@ -103,7 +111,9 @@ export function NetPositionDashboard() {
         </span>
       </div>
 
-      {/* Summary cards */}
+      <SegmentedControl segments={TABS} activeKey={activeTab} onChange={setActiveTab} />
+
+      {/* Summary cards — always visible */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Long" value={formatBushelsShort(totalLong)} />
         <StatCard label="Total Short" value={formatBushelsShort(totalShort)} />
@@ -119,8 +129,8 @@ export function NetPositionDashboard() {
         />
       </div>
 
-      {/* Charts for top commodities */}
-      {chartData.map((cd) => (
+      {/* Charts — Overview shows top 3, Charts tab shows all */}
+      {(activeTab === 'overview' || activeTab === 'charts') && chartData.map((cd) => (
         <div key={cd.commodity} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <h3 className="text-lg font-semibold mb-3" style={{ color: getCommodityColor(cd.commodity) }}>
             {cd.commodity}
@@ -150,8 +160,8 @@ export function NetPositionDashboard() {
         </div>
       ))}
 
-      {/* Day-over-day deltas */}
-      {deltas.size > 0 && (
+      {/* Day-over-day deltas — overview only */}
+      {(activeTab === 'overview') && deltas.size > 0 && (
         <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
           <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">Position Changes Since Last Upload</h4>
           <div className="space-y-1 text-sm">
@@ -170,8 +180,8 @@ export function NetPositionDashboard() {
         </div>
       )}
 
-      {/* Position tables by commodity */}
-      {summaries.map((summary) => (
+      {/* Position tables by commodity — overview + tables tab */}
+      {(activeTab === 'overview' || activeTab === 'tables') && summaries.map((summary) => (
         <div key={summary.commodity}>
           <div className="flex items-center gap-3 mb-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(summary.commodity) }} />

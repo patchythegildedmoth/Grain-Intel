@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useDeliveryTimeline, type DeliveryMonthSummary } from '../../hooks/useDeliveryTimeline';
 import { DataTable } from '../shared/DataTable';
@@ -8,6 +8,7 @@ import { formatBushelsShort, formatDate } from '../../utils/formatters';
 import { getCommodityColor } from '../../utils/commodityColors';
 import type { Contract } from '../../types/contracts';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, ReferenceLine } from 'recharts';
+import { SegmentedControl } from '../shared/SegmentedControl';
 
 const monthCol = createColumnHelper<DeliveryMonthSummary>();
 const monthColumns = [
@@ -109,7 +110,14 @@ const contractColumns = [
   }),
 ];
 
+const TIMELINE_TABS = [
+  { key: 'overview', label: 'Overview' },
+  { key: 'this-month', label: 'This Month' },
+  { key: 'next-month', label: 'Next Month' },
+];
+
 export function DeliveryTimeline() {
+  const [activeTab, setActiveTab] = useState('overview');
   const {
     monthSummaries,
     currentMonth,
@@ -156,7 +164,9 @@ export function DeliveryTimeline() {
         </span>
       </div>
 
-      {/* Summary cards */}
+      <SegmentedControl segments={TIMELINE_TABS} activeKey={activeTab} onChange={setActiveTab} />
+
+      {/* Summary cards — always visible */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Inbound" value={formatBushelsShort(totalInbound)} />
         <StatCard label="Total Outbound" value={formatBushelsShort(totalOutbound)} />
@@ -172,8 +182,8 @@ export function DeliveryTimeline() {
         />
       </div>
 
-      {/* Past-due alert */}
-      {pastDueMonths.length > 0 && (
+      {/* Overview tab content */}
+      {activeTab === 'overview' && pastDueMonths.length > 0 && (
         <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4">
           <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2">Past-Due Deliveries</h4>
           <div className="space-y-2 text-sm">
@@ -188,8 +198,7 @@ export function DeliveryTimeline() {
         </div>
       )}
 
-      {/* 6-month forward chart */}
-      {chartData.length > 0 && (
+      {activeTab === 'overview' && chartData.length > 0 && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
           <h3 className="text-lg font-semibold mb-3">6-Month Forward View</h3>
           <ResponsiveContainer width="100%" height={300}>
@@ -225,8 +234,8 @@ export function DeliveryTimeline() {
         </div>
       )}
 
-      {/* Monthly summary table */}
-      <div>
+      {/* Monthly summary table — overview tab */}
+      {activeTab === 'overview' && <div>
         <h3 className="text-lg font-semibold mb-2">Monthly Summary</h3>
         <DataTable
           data={monthSummaries}
@@ -239,10 +248,10 @@ export function DeliveryTimeline() {
             contracts: String(monthSummaries.reduce((s, m) => s + m.contracts.length, 0)),
           }}
         />
-      </div>
+      </div>}
 
-      {/* Current month detail */}
-      {currentMonth && (
+      {/* Current month detail — overview + this-month tab */}
+      {(activeTab === 'overview' || activeTab === 'this-month') && currentMonth && (
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h3 className="text-lg font-semibold">Current Month: {currentMonth.monthLabel}</h3>
@@ -254,8 +263,8 @@ export function DeliveryTimeline() {
         </div>
       )}
 
-      {/* Next month detail */}
-      {nextMonth && (
+      {/* Next month detail — overview + next-month tab */}
+      {(activeTab === 'overview' || activeTab === 'next-month') && nextMonth && (
         <div>
           <div className="flex items-center gap-3 mb-2">
             <h3 className="text-lg font-semibold">Next Month: {nextMonth.monthLabel}</h3>

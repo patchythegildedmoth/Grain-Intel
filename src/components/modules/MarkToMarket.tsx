@@ -1,5 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useMarkToMarket } from '../../hooks/useMarkToMarket';
+import { SegmentedControl } from '../shared/SegmentedControl';
 import { usePriceLaterExposure } from '../../hooks/usePriceLaterExposure';
 import { useFreightEfficiency } from '../../hooks/useFreightEfficiency';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
@@ -13,7 +14,14 @@ import {
   Line,
 } from 'recharts';
 
+const M2M_TABS = [
+  { key: 'executive', label: 'Executive Summary' },
+  { key: 'by-month', label: 'P&L by Month' },
+  { key: 'detail', label: 'Contract Detail' },
+];
+
 export function MarkToMarket() {
+  const [activeTab, setActiveTab] = useState('executive');
   const {
     commoditySummaries,
     alerts,
@@ -122,8 +130,10 @@ export function MarkToMarket() {
         </div>
       )}
 
+      <SegmentedControl segments={M2M_TABS} activeKey={activeTab} onChange={setActiveTab} />
+
       {/* Section A: Executive Summary */}
-      <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {activeTab === 'executive' && <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
           <h3 className="font-semibold text-gray-800 dark:text-gray-200">Executive Summary</h3>
         </div>
@@ -183,10 +193,10 @@ export function MarkToMarket() {
             </tfoot>
           </table>
         </div>
-      </section>
+      </section>}
 
       {/* Per-commodity: FM Breakdown + Waterfall */}
-      {commoditySummaries.map((cs) => (
+      {activeTab === 'by-month' && commoditySummaries.map((cs) => (
         <div key={cs.commodity} className="space-y-4">
           <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
             <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(cs.commodity) }} />
@@ -283,7 +293,7 @@ export function MarkToMarket() {
       ))}
 
       {/* Section C: Contract Detail */}
-      <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      {activeTab === 'detail' && <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
         <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
           <h3 className="font-semibold text-gray-800 dark:text-gray-200">
             Contract Detail ({allContracts.length} contracts)
@@ -348,7 +358,7 @@ export function MarkToMarket() {
             </tbody>
           </table>
         </div>
-      </section>
+      </section>}
     </div>
   );
 }
