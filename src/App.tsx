@@ -16,6 +16,7 @@ import { DailyInputs } from './components/modules/DailyInputs';
 import { PriceLaterExposure } from './components/modules/PriceLaterExposure';
 import { MarkToMarket } from './components/modules/MarkToMarket';
 import { FreightEfficiencyAnalysis } from './components/modules/FreightEfficiencyAnalysis';
+import { EntityLocationMap } from './components/modules/EntityLocationMap';
 
 function getHashModule(): string {
   const hash = window.location.hash.replace('#', '');
@@ -121,6 +122,8 @@ export default function App() {
         return <MarkToMarket onNavigate={handleModuleChange} />;
       case 'freight-efficiency':
         return <FreightEfficiencyAnalysis />;
+      case 'entity-map':
+        return <EntityLocationMap onNavigate={handleModuleChange} />;
       case 'data-health':
         return <DataHealth />;
       default:

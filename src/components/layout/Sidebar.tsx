@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
   { id: 'price-later', label: '7. Price-Later', icon: '⏳', group: 'market' },
   { id: 'mark-to-market', label: '8. Mark-to-Market', icon: '💰', group: 'market' },
   { id: 'freight-efficiency', label: '9. Freight Efficiency', icon: '🚚', group: 'market' },
+  { id: 'entity-map', label: 'Entity Map', icon: '📍', group: 'tools' },
   { id: 'scenario', label: 'What-If Scenario', icon: '🔮', group: 'tools' },
   { id: 'data-health', label: 'Data Health', icon: '🔍', group: 'tools' },
 ] as const;
