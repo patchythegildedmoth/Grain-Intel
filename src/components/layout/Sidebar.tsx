@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { id: 'morning-brief', label: 'Morning Brief', icon: '📋', group: 'main' },
   { id: 'net-position', label: '1. Net Position', icon: '📊', group: 'main' },
   { id: 'unpriced-exposure', label: '2. Unpriced Exposure', icon: '⚠️', group: 'main' },

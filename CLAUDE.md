@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Does
 
-Grain Trading Intelligence Module for **Ag Source LLC**. A React SPA that parses iRely i21 contract exports (Excel), fetches CBOT futures prices via Yahoo Finance, and computes daily trading analytics across 8 modules + Morning Brief. Used by the grain merchandising team each morning to assess position, exposure, P&L, and risk before trading.
+Grain Trading Intelligence Module for **Ag Source LLC**. A React SPA that parses iRely i21 contract exports (Excel), fetches CBOT futures prices via Yahoo Finance, and computes daily trading analytics across 13 modules including Morning Brief. Used by the grain merchandising team each morning to assess position, exposure, P&L, freight efficiency, and risk before trading.
 
 ## Commands
 
 ```bash
 npm run dev          # Vite dev server with hot reload (port 5173)
 npm run build        # TypeScript check + Vite production build
-npm run test         # Vitest single run (18 tests currently)
+npm run test         # Vitest single run (93 tests across 6 files)
 npm run test:watch   # Vitest watch mode
 ```
 
@@ -57,17 +57,68 @@ useContractStore (Contract[] with derived fields)
 ### Two Zustand Stores
 
 - **useContractStore** (`grain-intel-store` in localStorage) — iRely contract data, validation results. Only `previousSnapshot` persists; contracts reload fresh each session (intentional — forces data freshness).
-- **useMarketDataStore** (`grain-intel-market-data` in localStorage) — daily market inputs (sell basis, settlements, in-transit, HTA-paired, freight costs), 365-day rolling history, M2M snapshots, Yahoo Finance proxy URL.
+- **useMarketDataStore** (`grain-intel-market-data` in localStorage) — daily market inputs (sell basis, settlements, in-transit, HTA-paired, freight tiers), 365-day rolling history (auto-pruned), M2M snapshot history for sparkline trends, Yahoo Finance proxy URL. History keyed by date string (e.g., "2026-03-20").
 
 ### Hook Pattern
 
 Every analytics hook follows: subscribe to store selectors → compute in `useMemo` → return structured output (summaries + details + alerts). All hooks are pure — no side effects, no fetching.
 
+**13 hooks total:**
+- `useNetPosition`, `useUnpricedExposure`, `useDeliveryTimeline`, `useBasisSpread`, `useCustomerAnalysis`, `useRiskProfile` — original 6 analytics modules
+- `useScenario` — What-If scenario calculations
+- `useDataHealth` — data validation stats
+- `usePriceLaterExposure` — carry cost on Basis contracts, per-penny basis risk on HTA
+- `useMarkToMarket` — orchestrates M2M (calls resolveContractM2M → aggregateM2M → generateM2MAlerts)
+- `useFreightEfficiency` — freight tier analysis, margin recovery, cost trends
+- `useDailyInputScaffold` — auto-generates Daily Inputs form rows from open contracts
+- `useGlobalAlerts` — aggregates alerts from all hooks into a single prioritized feed
+
+### M2M Architecture (Decomposed)
+
+The Mark-to-Market calculation is split across 4 pure utility files for testability:
+
+```
+useMarkToMarket.ts (hook — thin orchestrator, 63 lines)
+  ├── resolveContractM2M.ts  — per-contract M2M resolution (pricing type switch, freight adjustment)
+  ├── aggregateM2M.ts        — groups into commodity summaries, FM breakdowns, exposure waterfall
+  └── m2mAlerts.ts           — generates severity-tagged alerts with entity context
+      └── m2mCalc.ts         — core formulas (calcPricedPurchaseM2M, calcBasisM2M, etc.)
+```
+
+### Global Alert System
+
+`useGlobalAlerts` hook aggregates alerts from all 8 analytics hooks into `GlobalAlert[]` with `{ level, message, module, moduleId, commodity? }`. Sorted by severity (critical → warning → info). Returns `criticalCount`, `warningCount`, and `byModule` map.
+
+Used by: `AlertDrawer` (slide-out panel from right), `AlertBellButton` (red badge in header).
+
+### Segmented Controls (Tabbed Views)
+
+4 largest modules use `SegmentedControl` component to eliminate long-scroll layouts:
+
+| Module | Tabs | Default |
+|--------|------|---------|
+| NetPositionDashboard | Overview · Charts · Tables | Overview |
+| MarkToMarket | Executive Summary · P&L by Month · Contract Detail | Executive Summary |
+| UnpricedExposureReport | Summary · By Futures Month · Contracts | Summary |
+| DeliveryTimeline | Overview · This Month · Next Month | Overview |
+
+Summary StatCards remain visible above tabs. Tab state is local `useState` (not persisted).
+
+### Store Versioning
+
+Both Zustand stores use `version` + `migrate` for schema evolution:
+- **useContractStore** v1: ensures `exposure` field on `previousSnapshot`
+- **useMarketDataStore** v1: migrates `freightCosts` → `freightTiers`, adds missing fields
+
+Both stores have `onRehydrateStorage` error handlers that clear corrupted localStorage.
+
 ### Routing
 
 Hash-based SPA routing via `window.location.hash`. Supports query params for filtered navigation (e.g., `#delivery-timeline?filter=overdue`).
 
-Module IDs: `morning-brief`, `net-position`, `unpriced-exposure`, `delivery-timeline`, `basis-spread`, `customer-concentration`, `risk-profile`, `scenario`, `daily-inputs`, `price-later`, `mark-to-market`, `data-health`.
+Module IDs (13 total): `morning-brief`, `net-position`, `unpriced-exposure`, `delivery-timeline`, `basis-spread`, `customer-concentration`, `risk-profile`, `daily-inputs`, `price-later`, `mark-to-market`, `freight-efficiency`, `scenario`, `data-health`.
+
+Sidebar groups: **main** (Morning Brief through Risk Profile), **market** (Daily Inputs, Price-Later, M2M, Freight Efficiency), **tools** (Scenario, Data Health).
 
 ## Domain Knowledge
 
@@ -250,6 +301,9 @@ Defined in `src/utils/alerts.ts`:
 - **StatCard**: KPI metric. Props: `label, value, delta?, deltaDirection? ('up'|'down'|'neutral'), colorClass?`
 - **AlertBadge**: Severity pill. Props: `level` (`critical`/`warning`/`info`/`ok`). NOT `severity`.
 - **DataTable**: TanStack Table wrapper with sorting, sticky headers, dark mode
+- **SegmentedControl**: Tabbed view switcher. Props: `segments: { key, label }[], activeKey, onChange, size?`. WAI-ARIA `role="tablist"`. `no-print` class.
+- **AlertDrawer**: Slide-out panel from right. Props: `open, onClose, onNavigate`. Groups alerts by severity.
+- **AlertBellButton**: Bell icon for header. Shows red badge with `criticalCount`. Uses `useGlobalAlerts`.
 - Cards: `rounded-xl`. Buttons: `rounded-lg`. Progress bars: `rounded-full`.
 
 ## Commodity Colors
@@ -262,8 +316,22 @@ Used across all charts. Never repurpose for semantic meaning:
 
 - **No real-time quotes**: Yahoo Finance provides end-of-day only. Real-time requires a paid data provider (P3 TODO).
 - **No iRely API**: Data loaded via manual Excel export. API integration blocked by iRely access (P2 TODO).
-- **Expired contracts can't be marked**: Yahoo Finance doesn't return prices for expired futures months. Must enter manually for historical P&L.
+- **Expired contracts can't be marked**: Yahoo Finance doesn't return prices for expired futures months. Zero-price settlements are filtered to prevent fake P&L. Must enter manually for historical view.
 - **Organic threshold is hard-coded**: $3.00/bu in `filterContracts.ts`. If organic premiums change, this needs updating.
 - **Freight tiers are fixed-step, not per-route**: Tiers A-L map to fixed $/bu costs (10c increments). No freight table by origin/destination. Excel dropdowns not supported by free SheetJS — traders type the letter manually with a reference column for guidance.
 - **Single user**: No auth, no multi-user. State is per-browser via localStorage.
 - **CBOT month codes assume standard expiration**: No handling for early exercise or delivery.
+- **Milo has no CBOT futures**: Skipped in Yahoo Finance fetch. Scenario sliders show $0 impact because all Milo contracts are fully Priced (no Basis or HTA exposure to model).
+
+## In-Progress Plan (Remaining Phases)
+
+The plan at `.claude/plans/cozy-humming-coral.md` has 4 remaining phases (Phases 1 and 3 are complete):
+
+| Phase | Feature | Status | Dependencies |
+|-------|---------|--------|-------------|
+| 4 | Command Palette (Cmd+K search) | Not started | Standalone |
+| 6 | Breadcrumbs + cross-module links | Not started | Phase 1 ✅ |
+| 7 | Inline Scenario Sliders in M2M/Exposure | Not started | Phase 1 ✅ |
+| 9 | Sidebar badges + unvisited module dots | Not started | Phase 3 ✅ |
+
+All dependencies are met. New sessions can pick up from Phase 4.

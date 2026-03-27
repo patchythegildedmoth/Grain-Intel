@@ -1,7 +1,8 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useState, useEffect, useCallback } from 'react';
 import { Sidebar } from './Sidebar';
 import { DarkModeToggle } from './DarkModeToggle';
 import { AlertDrawer, AlertBellButton } from './AlertDrawer';
+import { CommandPalette } from './CommandPalette';
 import { useContractStore } from '../../store/useContractStore';
 
 interface AppShellProps {
@@ -15,6 +16,27 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
   const uploadDate = useContractStore((s) => s.uploadDate);
   const clearData = useContractStore((s) => s.clearData);
   const [alertDrawerOpen, setAlertDrawerOpen] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
+
+  // Global Cmd+K / Ctrl+K shortcut
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setPaletteOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  const handlePaletteNavigate = useCallback(
+    (moduleId: string) => {
+      onModuleChange(moduleId);
+      setPaletteOpen(false);
+    },
+    [onModuleChange],
+  );
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
@@ -43,6 +65,17 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
           </div>
         )}
 
+        <button
+          onClick={() => setPaletteOpen(true)}
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          title="Search (⌘K)"
+        >
+          <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
+          </svg>
+          <span className="hidden sm:inline text-xs text-gray-400 dark:text-gray-500">⌘K</span>
+        </button>
+
         <AlertBellButton onClick={() => setAlertDrawerOpen(!alertDrawerOpen)} />
         <DarkModeToggle />
       </header>
@@ -66,6 +99,13 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
       <footer className="h-7 shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center px-4 text-xs text-gray-400 dark:text-gray-500 no-print">
         Grain Trading Intelligence Module v1.0.0 &middot; Ag Source LLC
       </footer>
+
+      {/* Command Palette */}
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onNavigate={handlePaletteNavigate}
+      />
     </div>
   );
 }
