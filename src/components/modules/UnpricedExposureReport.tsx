@@ -16,6 +16,7 @@ import {
   ComposedChart, Line, ReferenceLine,
 } from 'recharts';
 import { SegmentedControl } from '../shared/SegmentedControl';
+import { CrossModuleLink } from '../shared/CrossModuleLink';
 
 // --- Summary by type table ---
 const summaryCol = createColumnHelper<UnpricedSummaryRow>();
@@ -169,7 +170,7 @@ const EXPOSURE_TABS = [
   { key: 'contracts', label: 'Contracts' },
 ];
 
-export function UnpricedExposureReport() {
+export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const [activeTab, setActiveTab] = useState('summary');
   const {
     commoditySummaries, totalExposure, totalNetExposure,
@@ -362,6 +363,14 @@ export function UnpricedExposureReport() {
       {totalContracts === 0 && (
         <div className="text-center py-12 text-gray-500 dark:text-gray-400">
           No unpriced exposure found in current contracts.
+        </div>
+      )}
+
+      {/* Cross-module links */}
+      {onNavigate && totalContracts > 0 && (
+        <div className="flex gap-6 pt-2">
+          <CrossModuleLink label="Check delivery timeline" moduleId="delivery-timeline" onNavigate={onNavigate} />
+          <CrossModuleLink label="Run what-if scenario" moduleId="scenario" onNavigate={onNavigate} />
         </div>
       )}
     </div>

@@ -14,7 +14,7 @@ import { AlertBadge } from '../shared/AlertBadge';
 import { formatBushelsShort, formatCurrency, formatPercent, formatDate, formatBasis } from '../../utils/formatters';
 import { getCommodityColor } from '../../utils/commodityColors';
 
-export function MorningBrief() {
+export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: string) => void }) {
   const fileName = useContractStore((s) => s.fileName);
   const uploadDate = useContractStore((s) => s.uploadDate);
 

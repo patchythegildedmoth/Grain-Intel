@@ -9,6 +9,7 @@ import { formatBushelsShort, formatBasis, formatCurrency } from '../../utils/for
 import { getCommodityColor } from '../../utils/commodityColors';
 import { THRESHOLDS } from '../../utils/alerts';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Legend, Cell } from 'recharts';
+import { CrossModuleLink } from '../shared/CrossModuleLink';
 
 const col = createColumnHelper<PositionRow>();
 
@@ -81,7 +82,7 @@ const TABS = [
   { key: 'tables', label: 'Tables' },
 ];
 
-export function NetPositionDashboard() {
+export function NetPositionDashboard({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const [activeTab, setActiveTab] = useState('overview');
   const { summaries, deltas, openContractCount } = useNetPosition();
 
@@ -203,6 +204,14 @@ export function NetPositionDashboard() {
           />
         </div>
       ))}
+
+      {/* Cross-module links */}
+      {onNavigate && (
+        <div className="flex gap-6 pt-2">
+          <CrossModuleLink label="View unpriced contracts" moduleId="unpriced-exposure" onNavigate={onNavigate} />
+          <CrossModuleLink label="Check delivery timeline" moduleId="delivery-timeline" onNavigate={onNavigate} />
+        </div>
+      )}
     </div>
   );
 }

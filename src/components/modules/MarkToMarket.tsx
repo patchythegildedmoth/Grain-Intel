@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useMarkToMarket } from '../../hooks/useMarkToMarket';
 import { SegmentedControl } from '../shared/SegmentedControl';
 import { usePriceLaterExposure } from '../../hooks/usePriceLaterExposure';
@@ -13,6 +13,9 @@ import {
   LineChart,
   Line,
 } from 'recharts';
+import { CrossModuleLink } from '../shared/CrossModuleLink';
+import { InlineScenarioSlider } from '../shared/InlineScenarioSlider';
+import { useScenario } from '../../hooks/useScenario';
 
 const M2M_TABS = [
   { key: 'executive', label: 'Executive Summary' },
@@ -20,8 +23,11 @@ const M2M_TABS = [
   { key: 'detail', label: 'Contract Detail' },
 ];
 
-export function MarkToMarket() {
+export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const [activeTab, setActiveTab] = useState('executive');
+  const [whatIfOpen, setWhatIfOpen] = useState(false);
+  const [scenarioPrices, setScenarioPrices] = useState<Record<string, number>>({});
+  const [scenarioBasis, setScenarioBasis] = useState<Record<string, number>>({});
   const {
     commoditySummaries,
     alerts,
@@ -35,6 +41,14 @@ export function MarkToMarket() {
   const { totalDailyCarry } = usePriceLaterExposure();
   const { blendedFreightCost, totalFreightAdjustedBushels } = useFreightEfficiency();
   const { m2mSnapshots, saveM2MSnapshot } = useMarketDataStore();
+  const { scenarios: whatIfScenarios, totalPnl: whatIfTotalPnl } = useScenario(scenarioPrices, scenarioBasis);
+
+  const handleFuturesChange = useCallback((commodity: string, value: number) => {
+    setScenarioPrices((prev) => ({ ...prev, [commodity]: value }));
+  }, []);
+  const handleBasisChange = useCallback((commodity: string, value: number) => {
+    setScenarioBasis((prev) => ({ ...prev, [commodity]: value }));
+  }, []);
 
   // Snapshot M2M results for sparkline history
   useEffect(() => {
@@ -194,6 +208,83 @@ export function MarkToMarket() {
           </table>
         </div>
       </section>}
+
+      {/* Inline What-If Drawer — executive tab only */}
+      {activeTab === 'executive' && (
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden no-print">
+          <button
+            onClick={() => setWhatIfOpen(!whatIfOpen)}
+            className="w-full px-4 py-3 flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+          >
+            <span>
+              What-If Scenario
+              {whatIfTotalPnl !== 0 && (
+                <span className={`ml-2 text-xs font-normal ${whatIfTotalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  ({whatIfTotalPnl >= 0 ? '+' : ''}{formatCurrency(whatIfTotalPnl)} impact)
+                </span>
+              )}
+            </span>
+            <svg className={`w-4 h-4 transition-transform ${whatIfOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+            </svg>
+          </button>
+          {whatIfOpen && (
+            <div className="px-4 pb-4 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+              {whatIfScenarios.filter((s) => s.basisContracts > 0 || s.htaContracts > 0).map((sc) => {
+                const defaultFutures = sc.currentAvgFutures ?? 5;
+                const defaultBasis = sc.currentAvgBasis ?? 0;
+                return (
+                  <div key={sc.commodity} className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{sc.commodity}</span>
+                      {sc.totalPnl !== 0 && (
+                        <span className={`text-xs font-semibold ${sc.totalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {sc.totalPnl >= 0 ? '+' : ''}{formatCurrency(sc.totalPnl)}
+                        </span>
+                      )}
+                    </div>
+                    {sc.basisContracts > 0 && (
+                      <InlineScenarioSlider
+                        label="Futures"
+                        value={scenarioPrices[sc.commodity] ?? defaultFutures}
+                        min={Math.max(0, defaultFutures - 2)}
+                        max={defaultFutures + 2}
+                        step={0.05}
+                        defaultValue={defaultFutures}
+                        onChange={(v) => handleFuturesChange(sc.commodity, v)}
+                        formatValue={(v) => `$${v.toFixed(2)}`}
+                      />
+                    )}
+                    {sc.htaContracts > 0 && (
+                      <InlineScenarioSlider
+                        label="Basis"
+                        value={scenarioBasis[sc.commodity] ?? defaultBasis}
+                        min={defaultBasis - 1}
+                        max={defaultBasis + 1}
+                        step={0.01}
+                        defaultValue={defaultBasis}
+                        onChange={(v) => handleBasisChange(sc.commodity, v)}
+                        formatValue={(v) => `${v >= 0 ? '+' : ''}${v.toFixed(2)}`}
+                      />
+                    )}
+                  </div>
+                );
+              })}
+              {whatIfScenarios.filter((s) => s.basisContracts > 0 || s.htaContracts > 0).length === 0 && (
+                <p className="text-xs text-gray-500 dark:text-gray-400">No Basis or HTA contracts to model. All positions are fully priced.</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Cross-module links */}
+      {activeTab === 'executive' && onNavigate && (
+        <div className="flex gap-6 pt-2">
+          <CrossModuleLink label="Run what-if scenario" moduleId="scenario" onNavigate={onNavigate} />
+          <CrossModuleLink label="View unpriced contracts" moduleId="unpriced-exposure" onNavigate={onNavigate} />
+        </div>
+      )}
 
       {/* Per-commodity: FM Breakdown + Waterfall */}
       {activeTab === 'by-month' && commoditySummaries.map((cs) => (

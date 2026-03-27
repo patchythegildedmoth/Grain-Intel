@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import { useGlobalAlerts } from '../../hooks/useGlobalAlerts';
 
 export const NAV_ITEMS = [
   { id: 'morning-brief', label: 'Morning Brief', icon: '📋', group: 'main' },
@@ -25,6 +26,12 @@ interface SidebarProps {
 
 export function Sidebar({ activeModule, onModuleChange }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const visitedRef = useRef<Set<string>>(new Set(['morning-brief']));
+  const { byModule } = useGlobalAlerts();
+
+  // Track visited modules (session-level, resets on refresh)
+  if (activeModule) visitedRef.current.add(activeModule);
+
   let lastGroup = '';
 
   const navContent = (collapsed: boolean) => (
@@ -40,15 +47,51 @@ export function Sidebar({ activeModule, onModuleChange }: SidebarProps) {
             <button
               onClick={() => { onModuleChange(item.id); setMobileOpen(false); }}
               title={collapsed ? item.label : undefined}
-              className={`w-full text-left rounded-lg text-sm font-medium transition-colors flex items-center
+              className={`w-full text-left rounded-lg text-sm font-medium transition-colors flex items-center relative
                 ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-2.5'}
                 ${activeModule === item.id
                   ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
                 }`}
             >
-              <span className="text-base">{item.icon}</span>
-              {!collapsed && <span>{item.label}</span>}
+              <span className="text-base relative">
+                {item.icon}
+                {/* Unvisited blue dot */}
+                {!visitedRef.current.has(item.id) && activeModule !== item.id && (
+                  <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                )}
+              </span>
+              {!collapsed && (
+                <>
+                  <span className="flex-1">{item.label}</span>
+                  {/* Alert badge */}
+                  {(() => {
+                    const alerts = byModule.get(item.id as ModuleId);
+                    if (!alerts || alerts.length === 0) return null;
+                    const hasCritical = alerts.some((a) => a.level === 'critical');
+                    return (
+                      <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none ${
+                        hasCritical
+                          ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
+                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                      }`}>
+                        {alerts.length}
+                      </span>
+                    );
+                  })()}
+                </>
+              )}
+              {/* Collapsed: alert badge as top-right dot */}
+              {collapsed && (() => {
+                const alerts = byModule.get(item.id as ModuleId);
+                if (!alerts || alerts.length === 0) return null;
+                const hasCritical = alerts.some((a) => a.level === 'critical');
+                return (
+                  <span className={`absolute top-1 right-1 w-2 h-2 rounded-full ${
+                    hasCritical ? 'bg-red-500' : 'bg-amber-500'
+                  }`} />
+                );
+              })()}
             </button>
           </div>
         );

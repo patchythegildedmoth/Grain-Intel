@@ -3,6 +3,7 @@ import { Sidebar } from './Sidebar';
 import { DarkModeToggle } from './DarkModeToggle';
 import { AlertDrawer, AlertBellButton } from './AlertDrawer';
 import { CommandPalette } from './CommandPalette';
+import { Breadcrumb } from '../shared/Breadcrumb';
 import { useContractStore } from '../../store/useContractStore';
 
 interface AppShellProps {
@@ -84,6 +85,11 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
       <div className="flex flex-1 overflow-hidden">
         <Sidebar activeModule={activeModule} onModuleChange={onModuleChange} />
         <main className="flex-1 overflow-y-auto">
+          {activeModule !== 'morning-brief' && (
+            <div className="px-6 pt-3 pb-0">
+              <Breadcrumb activeModule={activeModule} onNavigate={onModuleChange} />
+            </div>
+          )}
           {children}
         </main>
       </div>

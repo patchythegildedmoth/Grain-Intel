@@ -98,11 +98,11 @@ export default function App() {
   const moduleContent = () => {
     switch (activeModule) {
       case 'morning-brief':
-        return <MorningBrief />;
+        return <MorningBrief onNavigate={handleModuleChange} />;
       case 'net-position':
-        return <NetPositionDashboard />;
+        return <NetPositionDashboard onNavigate={handleModuleChange} />;
       case 'unpriced-exposure':
-        return <UnpricedExposureReport />;
+        return <UnpricedExposureReport onNavigate={handleModuleChange} />;
       case 'delivery-timeline':
         return <DeliveryTimeline />;
       case 'basis-spread':
@@ -118,13 +118,13 @@ export default function App() {
       case 'price-later':
         return <PriceLaterExposure />;
       case 'mark-to-market':
-        return <MarkToMarket />;
+        return <MarkToMarket onNavigate={handleModuleChange} />;
       case 'freight-efficiency':
         return <FreightEfficiencyAnalysis />;
       case 'data-health':
         return <DataHealth />;
       default:
-        return <MorningBrief />;
+        return <MorningBrief onNavigate={handleModuleChange} />;
     }
   };
 
