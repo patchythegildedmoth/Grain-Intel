@@ -7,7 +7,7 @@
 
 const NOMINATIM_URL = 'https://nominatim.openstreetmap.org/search';
 const USER_AGENT = 'GrainIntel/1.0 (grain-trading-tool)';
-const RATE_LIMIT_MS = 1100;
+const RATE_LIMIT_MS = 1200; // slightly over 1/sec for safety
 
 export interface GeoResult {
   lat: number;
@@ -16,34 +16,50 @@ export interface GeoResult {
 }
 
 /**
- * Geocode a single address. Returns null if no results found.
+ * Geocode a single address. Retries once on 429 (rate limit).
+ * Returns null if no results found.
  */
 export async function geocodeAddress(address: string): Promise<GeoResult | null> {
   if (!address.trim()) return null;
 
   const url = `${NOMINATIM_URL}?q=${encodeURIComponent(address.trim())}&format=json&limit=1&countrycodes=us`;
 
-  try {
-    const resp = await fetch(url, {
-      headers: { 'User-Agent': USER_AGENT },
-    });
-    if (!resp.ok) return null;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': USER_AGENT },
+      });
 
-    const data = await resp.json();
-    if (!Array.isArray(data) || data.length === 0) return null;
+      // Rate limited — wait and retry once
+      if (resp.status === 429 && attempt === 0) {
+        await new Promise((r) => setTimeout(r, 3000));
+        continue;
+      }
 
-    return {
-      lat: parseFloat(data[0].lat),
-      lon: parseFloat(data[0].lon),
-      displayName: data[0].display_name,
-    };
-  } catch {
-    return null;
+      if (!resp.ok) return null;
+
+      const data = await resp.json();
+      if (!Array.isArray(data) || data.length === 0) return null;
+
+      return {
+        lat: parseFloat(data[0].lat),
+        lon: parseFloat(data[0].lon),
+        displayName: data[0].display_name,
+      };
+    } catch {
+      if (attempt === 0) {
+        await new Promise((r) => setTimeout(r, 2000));
+        continue;
+      }
+      return null;
+    }
   }
+
+  return null;
 }
 
 /**
- * Batch geocode with 1 req/sec rate limiting.
+ * Batch geocode with rate limiting.
  * Calls onProgress after each item. Supports AbortController for cancellation.
  * Returns a Map of entity name → result (skips failures).
  */
@@ -75,12 +91,40 @@ export async function geocodeBatch(
 }
 
 /**
+ * Parse a CSV row respecting quoted fields.
+ * Handles: entity names with commas (e.g., "Oesterling's Feed Co., Inc")
+ * and addresses with commas.
+ */
+function parseCSVRow(line: string): string[] {
+  const fields: string[] = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      fields.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  fields.push(current.trim());
+  return fields;
+}
+
+/**
  * Parse a CSV file with entity location data.
  *
- * Supports two formats:
- *   - "Entity Name, Address" (2 columns)
- *   - "Entity Name, City, State" (3 columns → joined as "City, State")
- *
+ * Expects 2 columns: "Entity Name" and "Address".
+ * Handles quoted fields (commas in entity names or addresses).
  * Skips header row if first row contains "entity" (case-insensitive).
  */
 export function parseEntityCSV(csvText: string): { entity: string; address: string }[] {
@@ -90,17 +134,17 @@ export function parseEntityCSV(csvText: string): { entity: string; address: stri
   const results: { entity: string; address: string }[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const parts = lines[i].split(',').map((s) => s.trim());
-    if (parts.length < 2) continue;
+    const fields = parseCSVRow(lines[i]);
+    if (fields.length < 2) continue;
 
     // Skip header row
-    if (i === 0 && parts[0].toLowerCase().includes('entity')) continue;
+    if (i === 0 && fields[0].toLowerCase().includes('entity')) continue;
 
-    const entity = parts[0];
+    const entity = fields[0];
     if (!entity) continue;
 
-    // 3+ columns: join columns 1+ as the address
-    const address = parts.slice(1).join(', ');
+    // Second field is the full address
+    const address = fields[1];
     if (!address) continue;
 
     results.push({ entity, address });
