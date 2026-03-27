@@ -214,6 +214,8 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
       {/* Modal */}
       <div className="fixed inset-0 z-50 flex items-start justify-center pt-[15vh] px-4 pointer-events-none no-print">
         <div
+          role="dialog"
+          aria-label="Search"
           className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden pointer-events-auto"
           onKeyDown={handleKeyDown}
         >
@@ -243,7 +245,7 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
           </div>
 
           {/* Results */}
-          <div ref={listRef} className="max-h-80 overflow-y-auto p-2">
+          <div ref={listRef} role="listbox" className="max-h-80 overflow-y-auto p-2">
             {groups.length === 0 ? (
               <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
                 No results found
@@ -259,6 +261,8 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
                     return (
                       <button
                         key={result.id}
+                        role="option"
+                        aria-selected={isSelected}
                         data-selected={isSelected}
                         onClick={() => {
                           result.action();

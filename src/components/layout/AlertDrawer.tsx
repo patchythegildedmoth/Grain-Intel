@@ -31,6 +31,8 @@ export function AlertDrawer({ open, onClose, onNavigate }: AlertDrawerProps) {
 
       {/* Drawer */}
       <aside
+        role="dialog"
+        aria-label="Alerts"
         className={`fixed top-14 right-0 bottom-0 w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-xl z-40 transition-transform duration-200 overflow-y-auto no-print
           ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >

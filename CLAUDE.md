@@ -28,13 +28,15 @@ Deployed URL: `https://grain-intel-yahoo-proxy.agsource.workers.dev`
 This is the designed-for morning routine (affects all UX decisions):
 
 1. **Upload iRely Excel** → auto-navigates to Morning Brief
-2. **Scan Morning Brief** → KPI cards are clickable, link to source modules
-3. **Drill into red/amber alerts** → investigate overdue contracts, net short positions
+2. **Scan Morning Brief** → KPI cards are clickable, link to source modules. Alert bell shows count.
+3. **Drill into red/amber alerts** → click bell for Alert Drawer, or click KPI to go to source module. Use cross-module links ("View unpriced contracts →") to navigate between related modules.
 4. **Go to Daily Inputs** → click "Fetch Settlements" to pull CBOT prices via Yahoo Finance
 5. **Upload basis Excel** (Sell Basis, In-Transit, HTA-Paired, Freight tabs)
 6. **Click Save All** → persists market data
-7. **Check Mark-to-Market** → see book P&L, per-commodity breakdown
+7. **Check Mark-to-Market** → see book P&L, per-commodity breakdown. Use inline scenario sliders for quick what-if analysis.
 8. **Print Morning Brief** for team meeting (print-optimized layout)
+
+Power user shortcuts: `Cmd+K` opens Command Palette to search contracts, entities, or modules instantly. Breadcrumbs show current location and allow quick navigation back.
 
 Order of Steps 4-5 doesn't matter — settlements and basis are independent and don't overwrite each other.
 
@@ -49,9 +51,9 @@ iRely Excel → parseExcel(buffer) → filterContracts() → validateData() → 
     ↓
 useContractStore (Contract[] with derived fields)
     ↓
-12 analytics hooks (pure useMemo, no side effects)
+13 analytics hooks (pure useMemo, no side effects)
     ↓
-12 module components render results
+13 module components render results
 ```
 
 ### Two Zustand Stores
@@ -89,7 +91,42 @@ useMarkToMarket.ts (hook — thin orchestrator, 63 lines)
 
 `useGlobalAlerts` hook aggregates alerts from all 8 analytics hooks into `GlobalAlert[]` with `{ level, message, module, moduleId, commodity? }`. Sorted by severity (critical → warning → info). Returns `criticalCount`, `warningCount`, and `byModule` map.
 
-Used by: `AlertDrawer` (slide-out panel from right), `AlertBellButton` (red badge in header).
+Used by: `AlertDrawer` (slide-out panel from right), `AlertBellButton` (red badge in header), sidebar per-module badge counts.
+
+### Command Palette (Cmd+K)
+
+`CommandPalette` component in `src/components/layout/CommandPalette.tsx`. Opens via `Cmd+K`/`Ctrl+K` or the search icon in the header.
+
+Searches 4 groups (max 8 results each):
+1. **Modules** — sidebar nav items by label
+2. **Contracts** — `contracts[]` by `contractNumber`
+3. **Entities** — unique entity names from contracts
+4. **Quick Actions** — Upload File, Fetch Settlements, Toggle Dark Mode, Export Data
+
+Fuzzy match via case-insensitive `includes()`. Min 2 chars to trigger. Arrow keys navigate, Enter selects, Escape closes. `NAV_ITEMS` is exported from `Sidebar.tsx` so the palette reuses the same module list.
+
+### Breadcrumbs & Cross-Module Links
+
+**Breadcrumb** (`src/components/shared/Breadcrumb.tsx`): Renders `Home / [Group] / [Module]` path. Shown on all modules except Morning Brief. "Home" links back to Morning Brief. Group is derived from sidebar group (Analytics, Market Data, Tools).
+
+**CrossModuleLink** (`src/components/shared/CrossModuleLink.tsx`): Inline navigation links at the bottom of module pages. Used in:
+- `NetPositionDashboard` — "View unpriced contracts" → Unpriced Exposure
+- `UnpricedExposureReport` — "Check delivery timeline", "Run what-if scenario"
+- `MarkToMarket` — "Run what-if scenario"
+
+Modules that use cross-links accept an `onNavigate: (moduleId: string) => void` prop, passed from `App.tsx`.
+
+### Inline Scenario Sliders
+
+`InlineScenarioSlider` (`src/components/shared/InlineScenarioSlider.tsx`): Range input with label, live value display, and reset button. Props: `label, value, min, max, step, onChange, formatValue?, defaultValue`.
+
+Used in `MarkToMarket.tsx` Executive Summary tab as a collapsible "What-If Scenario" drawer with per-commodity futures and basis sliders. Only visible when market data is loaded (`hasMarketData`). Uses `useScenario` hook.
+
+### Sidebar Enhancements
+
+The sidebar (`Sidebar.tsx`) has two visual indicators:
+- **Alert badges**: Per-module alert counts from `useGlobalAlerts().byModule`. Red badge for modules with critical alerts, amber for warnings. Shown as pill on desktop, dot on tablet icon rail.
+- **Unvisited blue dots**: Session-level `useRef<Set<string>>` tracks which modules have been clicked. Unvisited modules show a small blue dot on their icon. Resets on page refresh.
 
 ### Segmented Controls (Tabbed Views)
 
@@ -290,10 +327,15 @@ Defined in `src/utils/alerts.ts`:
 - **Morning Brief KPIs are clickable** → navigate to source module with hover state
 - **Lead KPI**: Unpriced Exposure (top-left on Morning Brief)
 - **Module layout pattern**: Summary StatCards → AlertBadges → Chart → Detail Table
-- **Sidebar**: Full width (w-56) on desktop, icon rail (w-14) on tablet, slide-out drawer on mobile
+- **Sidebar**: Full width (w-56) on desktop, icon rail (w-14) on tablet, slide-out drawer on mobile. Per-module alert badges + blue unvisited dots.
+- **Breadcrumbs**: `Home / [Group] / [Module]` shown on all modules except Morning Brief
+- **Cross-module links**: "View in [Module] →" links at module bottoms for related navigation
+- **Command Palette**: `Cmd+K` / `Ctrl+K` opens global search across modules, contracts, entities
+- **Alert Drawer**: Bell icon in header with count badge. Click opens slide-out panel grouped by severity.
 - **Guided empty state**: Ghost KPI preview shown when no data is loaded
 - **Dark mode**: Tailwind `dark:` variants, `class="dark"` on `<html>`, print forces light mode
 - **Commodity colors**: One color per commodity globally, never for semantic meaning
+- **Print**: `.no-print` class hides interactive chrome (sidebar, header, command palette, sliders, cross-links)
 - See `DESIGN.md` for full design token reference
 
 ## Component Conventions
@@ -304,6 +346,10 @@ Defined in `src/utils/alerts.ts`:
 - **SegmentedControl**: Tabbed view switcher. Props: `segments: { key, label }[], activeKey, onChange, size?`. WAI-ARIA `role="tablist"`. `no-print` class.
 - **AlertDrawer**: Slide-out panel from right. Props: `open, onClose, onNavigate`. Groups alerts by severity.
 - **AlertBellButton**: Bell icon for header. Shows red badge with `criticalCount`. Uses `useGlobalAlerts`.
+- **CommandPalette**: Modal overlay. Props: `open, onClose, onNavigate`. Searches modules, contracts, entities, actions.
+- **Breadcrumb**: Navigation path. Props: `activeModule, activeTab?, onNavigate`. Hidden on Morning Brief.
+- **CrossModuleLink**: Inline nav button. Props: `label, moduleId, onNavigate`. Arrow icon suffix.
+- **InlineScenarioSlider**: Range input. Props: `label, value, min, max, step, onChange, formatValue?, defaultValue`. Shows reset when changed.
 - Cards: `rounded-xl`. Buttons: `rounded-lg`. Progress bars: `rounded-full`.
 
 ## Commodity Colors
@@ -323,15 +369,25 @@ Used across all charts. Never repurpose for semantic meaning:
 - **CBOT month codes assume standard expiration**: No handling for early exercise or delivery.
 - **Milo has no CBOT futures**: Skipped in Yahoo Finance fetch. Scenario sliders show $0 impact because all Milo contracts are fully Priced (no Basis or HTA exposure to model).
 
-## In-Progress Plan (Remaining Phases)
+## Completed Plan
 
-The plan at `.claude/plans/cozy-humming-coral.md` has 4 remaining phases (Phases 1 and 3 are complete):
+The interactive navigation plan at `.claude/plans/cozy-humming-coral.md` is fully implemented. All 6 phases shipped:
 
-| Phase | Feature | Status | Dependencies |
-|-------|---------|--------|-------------|
-| 4 | Command Palette (Cmd+K search) | Not started | Standalone |
-| 6 | Breadcrumbs + cross-module links | Not started | Phase 1 ✅ |
-| 7 | Inline Scenario Sliders in M2M/Exposure | Not started | Phase 1 ✅ |
-| 9 | Sidebar badges + unvisited module dots | Not started | Phase 3 ✅ |
+| Phase | Feature | Status |
+|-------|---------|--------|
+| 1 | Segmented Controls (4 modules) | ✅ Complete |
+| 3 | Alert Drawer + Global Alert System | ✅ Complete |
+| 4 | Command Palette (Cmd+K search) | ✅ Complete |
+| 6 | Breadcrumbs + Cross-Module Links | ✅ Complete |
+| 7 | Inline Scenario Sliders (M2M) | ✅ Complete |
+| 9 | Sidebar Badges + Unvisited Dots | ✅ Complete |
 
-All dependencies are met. New sessions can pick up from Phase 4.
+## Deployment
+
+**GitHub Pages**: https://patchythegildedmoth.github.io/Grain-Intel/
+
+Deploys automatically via GitHub Actions on push to `main`. The workflow builds with Vite and publishes the `dist/` folder. Takes ~1-2 minutes after push.
+
+**Localhost** (`npm run dev`): Always up-to-date with current source. Vite hot-reloads on save.
+
+To deploy: commit changes, push to main. GitHub Actions handles the rest.

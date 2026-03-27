@@ -27,6 +27,7 @@ export function InlineScenarioSlider({
       <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-20 shrink-0">{label}</span>
       <input
         type="range"
+        aria-label={label}
         min={min}
         max={max}
         step={step}
