@@ -29,7 +29,7 @@ export function FileUpload() {
   }, [handleFile]);
 
   return (
-    <div className="flex items-center justify-center min-h-[calc(100vh-4rem)] p-8">
+    <div className="flex items-center justify-center min-h-[42vh] py-8 px-8">
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
