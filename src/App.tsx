@@ -82,7 +82,7 @@ export default function App() {
                 <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.06em]">
                   {card.icon} {card.label}
                 </div>
-                <div className="mt-2 text-2xl font-semibold font-data text-[var(--border-default)]">
+                <div className="mt-2 text-2xl font-semibold font-data text-[var(--text-muted)]">
                   —
                 </div>
                 <div className="mt-1 h-3 w-16 bg-[var(--bg-inset)] rounded-full" />
