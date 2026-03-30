@@ -450,9 +450,10 @@ Defined in `src/utils/alerts.ts`:
 
 ## Component Conventions
 
-- **StatCard**: KPI metric. Props: `label, value, delta?, deltaDirection? ('up'|'down'|'neutral'), colorClass?`
+- **StatCard**: KPI metric. Props: `label, value, numericValue?, formatValue?, delta?, deltaDirection? ('up'|'down'|'neutral'), colorClass?, size? ('default'|'hero')`. Use `size="hero"` for the lead KPI on each screen (renders `text-3xl`). Pass `numericValue` + `formatValue` to enable AnimatedNumber count-up.
 - **AlertBadge**: Severity pill. Props: `level` (`critical`/`warning`/`info`/`ok`). NOT `severity`.
-- **DataTable**: TanStack Table wrapper with sorting, sticky headers, dark mode
+- **DataTable**: TanStack Table wrapper with sorting, sticky headers, dark mode. Props: `data, columns, footerRow?, compact?`. `compact=true` uses `py-1.5` rows (36px) vs default `py-2` (44px). First column gets left accent border on row hover via CSS group pattern.
+- **AnimatedNumber**: Count-up span component. Props: `value, format, duration? (default 400ms), className?`. Uses cubic ease-out rAF loop. Respects `prefers-reduced-motion`. Guards against NaN values.
 - **SegmentedControl**: Tabbed view switcher. Props: `segments: { key, label }[], activeKey, onChange, size?`. WAI-ARIA `role="tablist"`. `no-print` class.
 - **AlertDrawer**: Slide-out panel from right. Props: `open, onClose, onNavigate`. Groups alerts by severity.
 - **AlertBellButton**: Bell icon for header. Shows red badge with `criticalCount`. Uses `useGlobalAlerts`.
