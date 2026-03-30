@@ -13,6 +13,11 @@ export interface MapEntity {
   lon: number;
   address: string;
   totalBushels: number;
+  purchaseBushels: number;
+  saleBushels: number;
+  purchaseContracts: number;
+  saleContracts: number;
+  netDirection: 'supplier' | 'buyer' | 'both' | 'none';
   commodities: { commodity: string; bushels: number; percent: number }[];
   primaryCommodity: string;
   contractCount: number;
@@ -84,6 +89,17 @@ export function useEntityMap(showAllGeocoded = false): EntityMapResult {
 
       mappedBushels += entityBu;
 
+      // Purchase vs Sale breakdown
+      const purchases = entityContracts.filter((c) => c.contractType === 'Purchase');
+      const sales = entityContracts.filter((c) => c.contractType === 'Sale');
+      const purchaseBushels = purchases.reduce((s, c) => s + c.balance, 0);
+      const saleBushels = sales.reduce((s, c) => s + c.balance, 0);
+      const netDirection: MapEntity['netDirection'] =
+        purchaseBushels > 0 && saleBushels > 0 ? 'both'
+        : purchaseBushels > 0 ? 'supplier'
+        : saleBushels > 0 ? 'buyer'
+        : 'none';
+
       // Commodity breakdown
       const byCommodity = groupBy(entityContracts, (c) => c.commodityCode);
       const commodities = Array.from(byCommodity.entries())
@@ -123,6 +139,11 @@ export function useEntityMap(showAllGeocoded = false): EntityMapResult {
         lon: location.lon,
         address: location.address,
         totalBushels: entityBu,
+        purchaseBushels,
+        saleBushels,
+        purchaseContracts: purchases.length,
+        saleContracts: sales.length,
+        netDirection,
         commodities,
         primaryCommodity,
         contractCount: entityContracts.length,
@@ -142,6 +163,11 @@ export function useEntityMap(showAllGeocoded = false): EntityMapResult {
             lon: location.lon,
             address: location.address,
             totalBushels: 0,
+            purchaseBushels: 0,
+            saleBushels: 0,
+            purchaseContracts: 0,
+            saleContracts: 0,
+            netDirection: 'none',
             commodities: [],
             primaryCommodity: 'Commodity Other',
             contractCount: 0,

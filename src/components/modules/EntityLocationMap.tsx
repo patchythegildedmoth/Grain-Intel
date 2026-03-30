@@ -35,8 +35,32 @@ const tableColumns = [
     cell: (info) => <span className="text-xs text-[var(--text-muted)]">{info.getValue()}</span>,
   }),
   col.accessor('totalBushels', {
-    header: 'Bushels',
+    header: 'Total Bu',
     cell: (info) => formatBushelsShort(info.getValue()),
+  }),
+  col.accessor('purchaseBushels', {
+    header: 'Purchases',
+    cell: (info) => {
+      const v = info.getValue();
+      return v > 0 ? <span className="text-green-600 dark:text-green-400">{formatBushelsShort(v)}</span> : '—';
+    },
+  }),
+  col.accessor('saleBushels', {
+    header: 'Sales',
+    cell: (info) => {
+      const v = info.getValue();
+      return v > 0 ? <span className="text-red-600 dark:text-red-400">{formatBushelsShort(v)}</span> : '—';
+    },
+  }),
+  col.accessor('netDirection', {
+    header: 'Role',
+    cell: (info) => {
+      const d = info.getValue();
+      if (d === 'supplier') return <span className="text-green-600 dark:text-green-400 font-medium">Supplier</span>;
+      if (d === 'buyer') return <span className="text-red-600 dark:text-red-400 font-medium">Buyer</span>;
+      if (d === 'both') return <span className="text-blue-600 dark:text-blue-400 font-medium">Both</span>;
+      return <span className="text-[var(--text-muted)]">—</span>;
+    },
   }),
   col.accessor('primaryCommodity', {
     header: 'Primary Commodity',
@@ -309,6 +333,18 @@ export function EntityLocationMap({ onNavigate }: Props) {
                         <span>Volume:</span>
                         <span className="font-semibold">{formatBushelsShort(entity.totalBushels)}</span>
                       </div>
+                      {entity.purchaseBushels > 0 && (
+                        <div className="flex justify-between">
+                          <span>Purchases:</span>
+                          <span className="font-semibold text-green-600">{formatBushelsShort(entity.purchaseBushels)} ({entity.purchaseContracts})</span>
+                        </div>
+                      )}
+                      {entity.saleBushels > 0 && (
+                        <div className="flex justify-between">
+                          <span>Sales:</span>
+                          <span className="font-semibold text-red-600">{formatBushelsShort(entity.saleBushels)} ({entity.saleContracts})</span>
+                        </div>
+                      )}
                       <div className="flex justify-between">
                         <span>Contracts:</span>
                         <span className="font-semibold">{entity.contractCount}</span>
