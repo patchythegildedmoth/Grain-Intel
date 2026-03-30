@@ -53,7 +53,7 @@ export function WeatherDashboard({ onNavigate }: WeatherDashboardProps) {
       lat: loc.lat,
       lon: loc.lon,
       name: loc.entity,
-      key: loc.entity,
+      key: loc.entity.trim().toUpperCase(),
     }));
   }, [entityLocations]);
 
