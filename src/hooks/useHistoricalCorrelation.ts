@@ -86,16 +86,12 @@ export function useHistoricalCorrelation() {
         signal: controller.signal,
       });
 
-      // Phase 3: Run correlation if we have a forecast
+      // Phase 3: Run correlation
       setState((s) => ({ ...s, progress: { phase: 'correlating', current: 0, total: 1, message: 'Computing correlations...' } }));
 
       let result: CorrelationResult | null = null;
 
-      // DEBUG — remove after diagnosis
-      console.log('[Historical] forecast:', forecast ? `✅ ${forecast.locationKey} (${forecast.daily.length} days)` : '❌ null');
-      console.log('[Historical] locations[0]:', locations[0]);
-
-      if (forecast && locations.length > 0) {
+      if (locations.length > 0) {
         const loc = locations[0];
         const symbol = CONTINUOUS_SYMBOLS[commodity];
 
@@ -112,14 +108,36 @@ export function useHistoricalCorrelation() {
             new Date().toISOString().slice(0, 10),
           );
 
-          // Aggregate current forecast into summary values
-          const currentPrecipMm = forecast.daily.reduce((s, d) => s + d.precipMm, 0);
-          const currentAvgTempC = forecast.daily.reduce((s, d) => s + (d.tempMaxC + d.tempMinC) / 2, 0) / (forecast.daily.length || 1);
-          const currentMinTempC = Math.min(...forecast.daily.map((d) => d.tempMinC));
+          // Derive "current conditions" — prefer live forecast, fall back to recent ERA5
+          let currentPrecipMm: number;
+          let currentAvgTempC: number;
+          let currentMinTempC: number;
+
+          if (forecast) {
+            // Live 7-day forecast
+            currentPrecipMm = forecast.daily.reduce((s, d) => s + d.precipMm, 0);
+            currentAvgTempC = forecast.daily.reduce((s, d) => s + (d.tempMaxC + d.tempMinC) / 2, 0) / (forecast.daily.length || 1);
+            currentMinTempC = Math.min(...forecast.daily.map((d) => d.tempMinC));
+          } else {
+            // Fall back to most recent 7 days of ERA5 historical archive
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const recentStartStr = sevenDaysAgo.toISOString().slice(0, 10);
+            const recentDays = weatherData.filter((d) => d.date >= recentStartStr && d.date <= todayStr);
+            if (recentDays.length > 0) {
+              currentPrecipMm = recentDays.reduce((s, d) => s + d.precipMm, 0);
+              currentAvgTempC = recentDays.reduce((s, d) => s + (d.tempMaxC + d.tempMinC) / 2, 0) / recentDays.length;
+              currentMinTempC = Math.min(...recentDays.map((d) => d.tempMinC));
+            } else {
+              // No recent data — use seasonal baseline (z-scores → 0, finds normal analogs)
+              currentPrecipMm = 0;
+              currentAvgTempC = 10;
+              currentMinTempC = 5;
+            }
+          }
 
           const today = new Date();
-          console.log('[Historical] weatherData records:', weatherData.length, '| priceData records:', priceData.length);
-          console.log('[Historical] currentPrecipMm:', currentPrecipMm, '| currentAvgTempC:', currentAvgTempC, '| currentMinTempC:', currentMinTempC);
           result = correlate({
             locationKey: loc.locationKey,
             weatherData,
@@ -131,7 +149,6 @@ export function useHistoricalCorrelation() {
             targetMonth: today.getMonth() + 1,
             targetDay: today.getDate(),
           });
-          console.log('[Historical] result:', result ? `analogCount=${result.analogCount}, confidence=${result.confidenceLevel}` : 'null');
         }
       }
 
