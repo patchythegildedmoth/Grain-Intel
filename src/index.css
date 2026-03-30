@@ -107,6 +107,40 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* ─── Animation keyframes ─────────────────────────────────────── */
+
+/* Page transition: fade + slide up 8px on module switch */
+@keyframes fade-slide-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Card stagger: fade + slide up 4px */
+@keyframes card-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Delta arrow: small bounce-in */
+@keyframes delta-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-page-transition {
+  animation: fade-slide-in 150ms ease-out both;
+}
+
+.animate-card-in {
+  animation: card-fade-in 300ms ease-out both;
+}
+
+.animate-delta-in {
+  animation: delta-in 200ms ease-out both;
+}
+
+/* ─── Print ───────────────────────────────────────────────────── */
+
 @media print {
   .no-print {
     display: none !important;

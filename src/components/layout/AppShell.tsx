@@ -90,7 +90,10 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
               <Breadcrumb activeModule={activeModule} onNavigate={onModuleChange} />
             </div>
           )}
-          {children}
+          {/* key forces remount on module switch → triggers fade+slide animation */}
+          <div key={activeModule} className="animate-page-transition">
+            {children}
+          </div>
         </main>
       </div>
 

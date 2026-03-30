@@ -13,9 +13,11 @@ interface DataTableProps<T> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columns: ColumnDef<T, any>[];
   footerRow?: Record<string, string | number>;
+  /** Compact mode: 36px rows instead of 44px. Use for dense data views. */
+  compact?: boolean;
 }
 
-export function DataTable<T>({ data, columns, footerRow }: DataTableProps<T>) {
+export function DataTable<T>({ data, columns, footerRow, compact = false }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const table = useReactTable({
@@ -26,6 +28,8 @@ export function DataTable<T>({ data, columns, footerRow }: DataTableProps<T>) {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
+
+  const cellPadding = compact ? 'py-1.5' : 'py-2';
 
   return (
     <div className="overflow-x-auto border border-[var(--border-default)] rounded-lg">
@@ -51,9 +55,16 @@ export function DataTable<T>({ data, columns, footerRow }: DataTableProps<T>) {
         </thead>
         <tbody className="divide-y divide-[var(--border-subtle)]">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="hover:bg-[var(--bg-surface-raised)]">
-              {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-3 py-2 text-[var(--text-secondary)] whitespace-nowrap">
+            <tr key={row.id} className="group hover:bg-[var(--bg-surface-raised)]">
+              {row.getVisibleCells().map((cell, cellIdx) => (
+                <td
+                  key={cell.id}
+                  className={`px-3 ${cellPadding} text-[var(--text-secondary)] whitespace-nowrap ${
+                    cellIdx === 0
+                      ? 'border-l-2 border-transparent group-hover:border-[var(--accent)] transition-colors duration-100'
+                      : ''
+                  }`}
+                >
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
@@ -73,9 +84,7 @@ export function DataTable<T>({ data, columns, footerRow }: DataTableProps<T>) {
         )}
       </table>
       {data.length === 0 && (
-        <div className="p-8 text-center text-[var(--text-muted)]">
-          No data to display
-        </div>
+        <div className="p-8 text-center text-[var(--text-muted)]">No data to display</div>
       )}
     </div>
   );

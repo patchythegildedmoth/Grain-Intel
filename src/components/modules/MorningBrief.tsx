@@ -138,36 +138,45 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
 
       {/* Top-level KPIs — clickable, navigates to source module */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <a href="#unpriced-exposure" className="group">
+        <a href="#unpriced-exposure" className="group animate-card-in">
           <StatCard
             label="⚠️ Unpriced Exposure"
+            size="hero"
+            numericValue={totalExposure}
+            formatValue={formatBushelsShort}
             value={formatBushelsShort(totalExposure)}
             delta={`${netExposureLabel}${netExposureDelta !== null ? ` (${netExposureDelta >= 0 ? '+' : ''}${formatBushelsShort(netExposureDelta)})` : ''}`}
             deltaDirection={Math.abs(totalNetExposure) < (prevTotalNet !== null ? Math.abs(prevTotalNet) : Infinity) ? 'up' : totalNetExposure !== 0 ? 'down' : 'neutral'}
-            colorClass={`${totalOverdue > 0 ? 'border-red-600/20 dark:border-red-700' : ''} group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer`}
+            colorClass={`${totalOverdue > 0 ? 'border-red-600/20 dark:border-red-700' : ''} group-hover:border-[var(--accent)] cursor-pointer`}
           />
         </a>
-        <a href="#net-position" className="group">
+        <a href="#net-position" className="group animate-card-in [animation-delay:50ms]">
           <StatCard
             label="Net Position"
+            numericValue={totalNet}
+            formatValue={formatBushelsShort}
             value={formatBushelsShort(totalNet)}
             deltaDirection={totalNet >= 0 ? 'up' : 'down'}
-            colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+            colorClass="group-hover:border-[var(--accent)] cursor-pointer"
           />
         </a>
-        <a href="#risk-profile" className="group">
+        <a href="#risk-profile" className="group animate-card-in [animation-delay:100ms]">
           <StatCard
             label="Hedge Ratio"
+            numericValue={overallHedgeRatio}
+            formatValue={formatPercent}
             value={formatPercent(overallHedgeRatio)}
             deltaDirection={overallHedgeRatio >= 0.7 ? 'up' : 'down'}
-            colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+            colorClass="group-hover:border-[var(--accent)] cursor-pointer"
           />
         </a>
-        <a href="#data-health" className="group">
+        <a href="#data-health" className="group animate-card-in [animation-delay:150ms]">
           <StatCard
             label="Open Contracts"
+            numericValue={openContractCount}
+            formatValue={(n) => String(Math.round(n))}
             value={String(openContractCount)}
-            colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+            colorClass="group-hover:border-[var(--accent)] cursor-pointer"
           />
         </a>
       </div>
@@ -175,33 +184,39 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
       {/* M2M KPIs — only shown when market data exists, clickable */}
       {hasMarketData && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <a href="#mark-to-market" className="group">
+          <a href="#mark-to-market" className="group animate-card-in [animation-delay:200ms]">
             <StatCard
               label="💰 Book P&L"
+              numericValue={totalBookPnl}
+              formatValue={formatCurrency}
               value={formatCurrency(totalBookPnl)}
               deltaDirection={totalBookPnl >= 0 ? 'up' : 'down'}
-              colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+              colorClass="group-hover:border-[var(--accent)] cursor-pointer"
             />
           </a>
-          <a href="#mark-to-market" className="group">
+          <a href="#mark-to-market" className="group animate-card-in [animation-delay:250ms]">
             <StatCard
               label="Open P&L"
+              numericValue={totalOpenPnl}
+              formatValue={formatCurrency}
               value={formatCurrency(totalOpenPnl)}
               delta="At-risk exposure"
               deltaDirection={totalOpenPnl >= 0 ? 'up' : 'down'}
-              colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+              colorClass="group-hover:border-[var(--accent)] cursor-pointer"
             />
           </a>
-          <a href="#price-later" className="group">
+          <a href="#price-later" className="group animate-card-in [animation-delay:300ms]">
             <StatCard
               label="Daily Carry Cost"
+              numericValue={Math.abs(totalDailyCarry)}
+              formatValue={formatCurrency}
               value={formatCurrency(Math.abs(totalDailyCarry))}
               delta={totalDailyCarry < 0 ? 'BENEFIT (inverted)' : 'Cost per day'}
               deltaDirection={totalDailyCarry < 0 ? 'up' : totalDailyCarry > 500 ? 'down' : undefined}
-              colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+              colorClass="group-hover:border-[var(--accent)] cursor-pointer"
             />
           </a>
-          <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-3">
+          <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-3 animate-card-in [animation-delay:350ms]">
             <div className="text-xs text-[var(--text-muted)] mb-1">Carry / Inversion</div>
             <div className="space-y-1">
               {priceLaterSummaries.filter((s) => s.carrySpread).map((s) => (
@@ -221,13 +236,13 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
               )}
             </div>
           </div>
-          <a href="#freight-efficiency" className="group">
+          <a href="#freight-efficiency" className="group animate-card-in [animation-delay:400ms]">
             <StatCard
               label="🚚 Avg Freight Cost"
               value={blendedFreightCost !== null ? formatCurrency(blendedFreightCost) + '/bu' : '—'}
               delta={costTrend.delta30d !== null ? `${costTrend.delta30d >= 0 ? '+' : ''}${formatCurrency(costTrend.delta30d)} vs 30d` : undefined}
               deltaDirection={costTrend.delta30d !== null ? (costTrend.delta30d > 0.03 ? 'down' : costTrend.delta30d < -0.03 ? 'up' : 'neutral') : undefined}
-              colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
+              colorClass="group-hover:border-[var(--accent)] cursor-pointer"
             />
           </a>
         </div>

@@ -4,14 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Project Does
 
-Grain Trading Intelligence Module for **Ag Source LLC**. A React SPA that parses iRely i21 contract exports (Excel), fetches CBOT futures prices via Yahoo Finance, and computes daily trading analytics across 13 modules including Morning Brief. Used by the grain merchandising team each morning to assess position, exposure, P&L, freight efficiency, and risk before trading.
+Grain Trading Intelligence Module for **Ag Source LLC**. A React SPA that parses iRely i21 contract exports (Excel), fetches CBOT futures prices via Yahoo Finance, integrates weather forecasts from Open-Meteo, and computes daily trading analytics across 16 modules including Morning Brief, Weather Dashboard, and Entity Location Map. Used by the grain merchandising team each morning to assess position, exposure, P&L, freight efficiency, weather risk, and geographic concentration before trading.
 
 ## Commands
 
 ```bash
 npm run dev          # Vite dev server with hot reload (port 5173)
 npm run build        # TypeScript check + Vite production build
-npm run test         # Vitest single run (93 tests across 6 files)
+npm run test         # Vitest single run (124 tests across 7 files)
 npm run test:watch   # Vitest watch mode
 ```
 
@@ -34,7 +34,8 @@ This is the designed-for morning routine (affects all UX decisions):
 5. **Upload basis Excel** (Sell Basis, In-Transit, HTA-Paired, Freight tabs)
 6. **Click Save All** → persists market data
 7. **Check Mark-to-Market** → see book P&L, per-commodity breakdown. Use inline scenario sliders for quick what-if analysis.
-8. **Print Morning Brief** for team meeting (print-optimized layout)
+8. **Check Weather Dashboard** → Morning Brief card shows weather risk severity. Click through to Weather module for 7-day forecasts, soil moisture, and historical correlation ("last time this happened, corn moved $X").
+9. **Print Morning Brief** for team meeting (print-optimized layout)
 
 Power user shortcuts: `Cmd+K` opens Command Palette to search contracts, entities, or modules instantly. Breadcrumbs show current location and allow quick navigation back.
 
@@ -56,16 +57,19 @@ useContractStore (Contract[] with derived fields)
 13 module components render results
 ```
 
-### Two Zustand Stores
+### Three Zustand Stores + IndexedDB
 
 - **useContractStore** (`grain-intel-store` in localStorage) — iRely contract data, validation results. Only `previousSnapshot` persists; contracts reload fresh each session (intentional — forces data freshness).
 - **useMarketDataStore** (`grain-intel-market-data` in localStorage) — daily market inputs (sell basis, settlements, in-transit, HTA-paired, freight tiers), 365-day rolling history (auto-pruned), M2M snapshot history for sparkline trends, Yahoo Finance proxy URL. History keyed by date string (e.g., "2026-03-20").
+- **useWeatherStore** (in-memory only, no persistence) — real-time weather forecasts and risk assessments. 30-minute cache TTL. Stores `forecasts[]`, `risks[]`, `lastFetched` timestamp. No localStorage — always fetches fresh on load.
+- **useEntityLocationStore** (`grain-intel-entity-locations` in localStorage) — entity geocoded locations + elevator location. Separate from market data because entity locations are semi-permanent reference data.
+- **IndexedDB** (`grain-intel-historical`) — historical weather and price archives for correlation engine. 4 object stores: `weather-history`, `price-history`, `cash-prices`, `fetch-metadata`. Needed because 10+ years of data exceeds localStorage's 5-10MB limit (~37MB). Gap-aware fetching via `fetch-metadata` store.
 
 ### Hook Pattern
 
-Every analytics hook follows: subscribe to store selectors → compute in `useMemo` → return structured output (summaries + details + alerts). All hooks are pure — no side effects, no fetching.
+Every analytics hook follows: subscribe to store selectors → compute in `useMemo` → return structured output (summaries + details + alerts). Most hooks are pure — no side effects, no fetching. Exception: `useWeatherRisk` and `useHistoricalCorrelation` trigger async fetches.
 
-**13 hooks total:**
+**16 hooks total:**
 - `useNetPosition`, `useUnpricedExposure`, `useDeliveryTimeline`, `useBasisSpread`, `useCustomerAnalysis`, `useRiskProfile` — original 6 analytics modules
 - `useScenario` — What-If scenario calculations
 - `useDataHealth` — data validation stats
@@ -74,6 +78,9 @@ Every analytics hook follows: subscribe to store selectors → compute in `useMe
 - `useFreightEfficiency` — freight tier analysis, margin recovery, cost trends
 - `useDailyInputScaffold` — auto-generates Daily Inputs form rows from open contracts
 - `useGlobalAlerts` — aggregates alerts from all hooks into a single prioritized feed
+- `useWeatherRisk` — joins weather forecasts + entity locations + contract positions → risk badges and alerts
+- `useHistoricalCorrelation` — orchestrates IndexedDB + historical fetchers + correlation engine for weather-price analogs
+- `useEntityMap` — joins entity geocoded locations with contract data for map visualization
 
 ### M2M Architecture (Decomposed)
 
@@ -86,6 +93,71 @@ useMarkToMarket.ts (hook — thin orchestrator, 63 lines)
   └── m2mAlerts.ts           — generates severity-tagged alerts with entity context
       └── m2mCalc.ts         — core formulas (calcPricedPurchaseM2M, calcBasisM2M, etc.)
 ```
+
+### Weather Dashboard Architecture
+
+```
+Real-Time:
+  Open-Meteo Forecast API → openMeteo.ts → useWeatherStore (30-min cache)
+    → useWeatherRisk.ts → risk badges + alerts + Morning Brief card
+    → WeatherDashboard.tsx (Overview | Forecast Charts | Soil & GDD | Historical)
+
+Historical:
+  Open-Meteo Archive API → historicalOpenMeteo.ts ─┐
+  Yahoo Finance Historical → historicalYahoo.ts ───┤→ IndexedDB (grain-intel-historical)
+                                                    ↓
+                                              useHistoricalCorrelation.ts
+                                                    ↓
+                                              correlationEngine.ts (z-score matching)
+                                                    ↓
+                                              HistoricalCorrelationTab.tsx (lazy-loaded)
+```
+
+**Weather Risk Assessment** (`openMeteo.ts:assessRisk()`):
+
+| Condition | Severity | Trigger |
+|-----------|----------|---------|
+| Drought (high) | high | totalPrecip < 5mm AND soilMoisture < 20% |
+| Drought (moderate) | moderate | totalPrecip < 10mm AND soilMoisture < 30% |
+| Freeze | varies | tempMin < 0-2°C in next 3 days (growing season only) |
+| Excess rain (high) | high | totalPrecip > 100mm |
+| Excess rain (moderate) | moderate | totalPrecip 75-100mm |
+
+Weather alerts trigger when risk severity is HIGH/EXTREME and position exposure > 50,000 bushels.
+
+**Growing Regions** (bounding boxes in `useWeatherRisk.ts`):
+- Western Corn Belt: IA, NE, MN, SD, ND (lat 40-49, lon -104 to -90)
+- Eastern Corn Belt: IL, IN, OH (lat 37-42, lon -90 to -80)
+- Plains: KS, OK, TX (lat 26-40, lon -104 to -94)
+- Delta: MO, AR, MS, LA (lat 29-40, lon -94 to -88)
+- Southeast: TN, KY, GA, AL (lat 30-39, lon -88 to -81)
+
+### Historical Correlation Engine
+
+Z-score analog matching (`correlationEngine.ts`):
+
+1. Compute historical mean/stddev for precip and temp across all years for a calendar window (month ± 2 weeks)
+2. Compute z-scores: `precipZ = (actual - mean) / stddev`
+3. Classify events: drought (precipZ < -1.5 + tempZ > -0.5), excess rain (precipZ > 1.5), freeze (minTemp < 0°C in growing season), heat stress (tempZ > 1.5 in growing season)
+4. Match current forecast z-scores against historical events by Euclidean distance
+5. Extract price response at 7d, 14d, 30d horizons. Price lookup tolerance: ±5 trading days.
+
+**Analog matching**: similarity = max(0, 1 - distance/4). Minimum threshold: 0.3. Confidence: HIGH (5+ analogs, avg similarity > 0.7), MODERATE (3+ analogs or similarity >= 0.5), LOW (otherwise).
+
+**Fetching strategy**: Progressive on-demand. Nothing fetched until user clicks Historical tab. Loads 2 years initially (~7MB, ~20-30s), then 5yr/10yr via "Load More". Gap-aware via `fetch-metadata` IndexedDB store.
+
+**Continuous contract symbols** for historical prices (not monthly): Corn→ZC=F, Soybeans→ZS=F, Wheat→ZW=F, Oats→ZO=F, Soybean Meal→ZM=F.
+
+### Entity Location Map Architecture
+
+Leaflet + Nominatim geocoding for geographic visualization of entity positions:
+
+- **useEntityLocationStore** — Zustand with persist, keyed by entity name (string match, `.trim()` + uppercase normalization)
+- **useEntityMap** hook — joins entity locations + contracts + freight tiers → `MapEntity[]` with bushels, commodity breakdown, freight mix
+- **Nominatim** (`nominatim.ts`) — geocoding with 1 req/sec rate limit, US-only (`countrycodes=us`), batch support with AbortController
+- **Map tiles**: Light (OpenStreetMap) / Dark (CartoDB dark_all), switched via `key` prop on TileLayer
+- **Marker sizing**: Log-scale proportional to bushels (6px-20px radius)
+- **Marker color**: Primary commodity color from `commodityColors.ts`
 
 ### Global Alert System
 
@@ -130,7 +202,7 @@ The sidebar (`Sidebar.tsx`) has two visual indicators:
 
 ### Segmented Controls (Tabbed Views)
 
-4 largest modules use `SegmentedControl` component to eliminate long-scroll layouts:
+5 modules use `SegmentedControl` component to eliminate long-scroll layouts:
 
 | Module | Tabs | Default |
 |--------|------|---------|
@@ -138,6 +210,7 @@ The sidebar (`Sidebar.tsx`) has two visual indicators:
 | MarkToMarket | Executive Summary · P&L by Month · Contract Detail | Executive Summary |
 | UnpricedExposureReport | Summary · By Futures Month · Contracts | Summary |
 | DeliveryTimeline | Overview · This Month · Next Month | Overview |
+| WeatherDashboard | Overview · Forecast Charts · Soil & GDD · Historical | Overview |
 
 Summary StatCards remain visible above tabs. Tab state is local `useState` (not persisted).
 
@@ -153,9 +226,9 @@ Both stores have `onRehydrateStorage` error handlers that clear corrupted localS
 
 Hash-based SPA routing via `window.location.hash`. Supports query params for filtered navigation (e.g., `#delivery-timeline?filter=overdue`).
 
-Module IDs (13 total): `morning-brief`, `net-position`, `unpriced-exposure`, `delivery-timeline`, `basis-spread`, `customer-concentration`, `risk-profile`, `daily-inputs`, `price-later`, `mark-to-market`, `freight-efficiency`, `scenario`, `data-health`.
+Module IDs (16 total): `morning-brief`, `net-position`, `unpriced-exposure`, `delivery-timeline`, `basis-spread`, `customer-concentration`, `risk-profile`, `daily-inputs`, `price-later`, `mark-to-market`, `freight-efficiency`, `weather`, `entity-map`, `scenario`, `data-health`.
 
-Sidebar groups: **main** (Morning Brief through Risk Profile), **market** (Daily Inputs, Price-Later, M2M, Freight Efficiency), **tools** (Scenario, Data Health).
+Sidebar groups: **main** (Morning Brief through Risk Profile), **market** (Daily Inputs, Price-Later, M2M, Freight Efficiency, Weather), **tools** (Entity Map, Scenario, Data Health).
 
 ## Domain Knowledge
 
@@ -273,9 +346,46 @@ The conversion map (`CENTS_PER_BUSHEL_COMMODITIES`) is in `yahooFinance.ts`. If 
 
 Cloudflare Worker at `worker/yahoo-proxy/index.js`. Forwards `?symbol=` to Yahoo Finance and adds CORS headers. Free tier (100K req/day). The proxy URL is stored in `useMarketDataStore.proxyUrl` and persists in localStorage.
 
+**Historical mode**: The proxy also accepts `period1` and `period2` (Unix timestamps) + `interval=1d` for historical OHLCV data. Used by `historicalYahoo.ts` with continuous contract symbols (ZC=F, ZS=F, etc.) to fetch 10+ years of price data. Backwards compatible — original 5-day range behavior unchanged when period params are absent.
+
 ### Expired Contracts
 
 Expired futures months (e.g., Corn Sep 2025 in March 2026) will fail to fetch. This is expected. The zero-price filter ensures they show "Unable to mark" instead of fake losses.
+
+## Open-Meteo Integration
+
+### Forecast API (Real-Time)
+
+`https://api.open-meteo.com/v1/forecast` — free, no API key required.
+
+Fetches daily data for 7 days: `precipitation_sum`, `temperature_2m_max`, `temperature_2m_min`, `soil_moisture_0_to_1cm`. Timezone: America/Chicago.
+
+**Batch deduplication**: Locations within 0.25° lat/lon are deduplicated to avoid redundant fetches. Max 5 concurrent requests with retry logic.
+
+**GDD formula**: `max(0, (tempMax + tempMin) / 2 - 10)` (base 10°C).
+
+### Historical Archive API
+
+`https://archive-api.open-meteo.com/v1/archive` — ERA5 reanalysis data from 1940-present.
+
+Fetched in 2-year chunks, max 5 concurrent, gap-aware via IndexedDB `fetch-metadata` store. Fields: `precipitation_sum`, `temperature_2m_max`, `temperature_2m_min`.
+
+## Entity Location Map Integration
+
+### Nominatim Geocoding
+
+`https://nominatim.openstreetmap.org/search` — free, requires User-Agent header (`GrainIntel/1.0`).
+
+- US-only (`countrycodes=us`)
+- Rate limit: 1 request/second (1100ms delay in batch mode)
+- Batch geocode supports AbortController for cancellation
+- CSV import: columns "Entity Name, Address" (or "Entity Name, City, State")
+
+### Leaflet Map
+
+- `leaflet` + `react-leaflet` packages
+- Light tiles: OpenStreetMap / Dark tiles: CartoDB dark_all
+- Icon fix required: default Leaflet marker icons need explicit import (webpack/vite strips them)
 
 ## Excel Template (Market Data)
 
@@ -365,9 +475,13 @@ Used across all charts. Never repurpose for semantic meaning:
 - **Expired contracts can't be marked**: Yahoo Finance doesn't return prices for expired futures months. Zero-price settlements are filtered to prevent fake P&L. Must enter manually for historical view.
 - **Organic threshold is hard-coded**: $3.00/bu in `filterContracts.ts`. If organic premiums change, this needs updating.
 - **Freight tiers are fixed-step, not per-route**: Tiers A-L map to fixed $/bu costs (10c increments). No freight table by origin/destination. Excel dropdowns not supported by free SheetJS — traders type the letter manually with a reference column for guidance.
-- **Single user**: No auth, no multi-user. State is per-browser via localStorage.
+- **Single user**: No auth, no multi-user. State is per-browser via localStorage + IndexedDB.
 - **CBOT month codes assume standard expiration**: No handling for early exercise or delivery.
 - **Milo has no CBOT futures**: Skipped in Yahoo Finance fetch. Scenario sliders show $0 impact because all Milo contracts are fully Priced (no Basis or HTA exposure to model).
+- **Weather requires entity locations**: Weather risk badges only work for entities with geocoded locations in `useEntityLocationStore`. Entities without locations show no weather data.
+- **Historical correlation requires first fetch**: 2-year historical data takes ~20-30s to download on first use. Subsequent loads use cached IndexedDB data. Private browsing may block IndexedDB.
+- **Soil moisture not in historical archive**: Open-Meteo ERA5 archive doesn't include soil moisture for bulk batch fetch. Drought classification uses precipitation z-score + temperature as proxy.
+- **Entity name matching is exact**: Entity names from iRely must match geocoded names exactly (after trim + uppercase normalization). "JOHN SMITH" vs "John Smith" will match, but "JOHN SMITH INC" vs "JOHN SMITH" will not.
 
 ## Completed Plan
 
@@ -393,7 +507,12 @@ Deploys automatically via GitHub Actions on push to `main`. The workflow builds 
 To deploy: commit changes, push to main. GitHub Actions handles the rest.
 
 ## Module Roadmap
-See `docs/DASHBOARD_MODULES_PLAN.md` for the full feature plan and current status.
+See `DASHBOARD_MODULES_PLAN.md` (repo root) for the full 19-item feature plan and current status.
+
+**Completed modules**: Entity Map (#1), Freight Tier Heatmap (#2), Weather Dashboard (#7), Keyboard Shortcuts/Command Palette (#14), Notification Badges (#15)
+
+**Not started**: Delivery Flow Map (#3), USDA Report (#4), Basis History (#5), Futures Curve (#6), Historical P&L (#8), Contract Aging (#9), What Changed (#10), Alerts Timeline (#11), Customizable Morning Brief (#12), Commodity Drill-Down (#13), Print/PDF Report (#16), iRely API (#17), Ethanol/DDG (#18), Peer Basis (#19)
+
 - Check the status tracker table at session start
 - Work on the current 🟡 module or ask which to start next
 - Update the tracker status and Notes column when completing work
