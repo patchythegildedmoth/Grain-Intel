@@ -139,6 +139,15 @@ body {
   animation: delta-in 200ms ease-out both;
 }
 
+/* Respect user's motion preference — disable all custom animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-page-transition,
+  .animate-card-in,
+  .animate-delta-in {
+    animation: none;
+  }
+}
+
 /* ─── Print ───────────────────────────────────────────────────── */
 
 @media print {
