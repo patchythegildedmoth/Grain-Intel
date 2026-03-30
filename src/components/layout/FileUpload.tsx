@@ -54,7 +54,7 @@ export function FileUpload() {
         </p>
 
         <label className="inline-block cursor-pointer">
-          <span className="px-6 py-3 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors">
+          <span className="px-6 py-3 bg-[var(--accent)] text-white rounded-md font-semibold hover:bg-[var(--accent-hover)] transition-colors">
             {loading ? 'Processing...' : 'Choose File'}
           </span>
           <input
