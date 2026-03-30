@@ -33,24 +33,24 @@ export function AlertDrawer({ open, onClose, onNavigate }: AlertDrawerProps) {
       <aside
         role="dialog"
         aria-label="Alerts"
-        className={`fixed top-14 right-0 bottom-0 w-80 bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 shadow-xl z-40 transition-transform duration-200 overflow-y-auto no-print
+        className={`fixed top-14 right-0 bottom-0 w-80 bg-[var(--bg-surface)] border-l border-[var(--border-default)] shadow-[var(--shadow-lg)] z-40 transition-transform duration-200 overflow-y-auto no-print
           ${open ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+        <div className="sticky top-0 z-10 bg-[var(--bg-surface)] border-b border-[var(--border-default)] px-4 py-3 flex items-center justify-between">
+          <h3 className="font-semibold text-[var(--text-primary)]">
             Alerts ({alerts.length})
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+            className="p-1 rounded hover:bg-[var(--bg-surface-raised)] text-[var(--text-muted)] hover:text-[var(--text-secondary)] dark:hover:text-[var(--text-muted)]"
           >
             ✕
           </button>
         </div>
 
         {alerts.length === 0 && (
-          <div className="p-8 text-center text-gray-400 dark:text-gray-500">
+          <div className="p-8 text-center text-[var(--text-muted)]">
             <div className="text-3xl mb-2">✓</div>
             <p className="text-sm">No alerts. Everything looks good.</p>
           </div>
@@ -78,21 +78,21 @@ export function AlertDrawer({ open, onClose, onNavigate }: AlertDrawerProps) {
 function AlertSection({ title, alerts, onAlertClick }: { title: string; alerts: GlobalAlert[]; onAlertClick: (a: GlobalAlert) => void }) {
   return (
     <div className="px-4 py-3">
-      <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-2">{title}</h4>
+      <h4 className="text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)] mb-2">{title}</h4>
       <div className="space-y-2">
         {alerts.map((alert, i) => (
           <button
             key={i}
             onClick={() => onAlertClick(alert)}
-            className="w-full text-left p-2.5 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
+            className="w-full text-left p-2.5 rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--bg-surface-raised)] transition-colors group"
           >
             <div className="flex items-start gap-2">
               <AlertBadge level={alert.level}>{alert.module}</AlertBadge>
-              <span className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed flex-1">
+              <span className="text-xs text-[var(--text-secondary)] leading-relaxed flex-1">
                 {alert.message}
               </span>
             </div>
-            <span className="text-[10px] text-blue-500 dark:text-blue-400 opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
+            <span className="text-[10px] text-[var(--accent)] opacity-0 group-hover:opacity-100 transition-opacity mt-1 block">
               View in {alert.module} →
             </span>
           </button>
@@ -109,7 +109,7 @@ export function AlertBellButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="relative p-1.5 rounded-lg text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+      className="relative p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-secondary)] dark:hover:text-[var(--text-muted)] hover:bg-[var(--bg-surface-raised)] transition-colors"
       title="Alerts"
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">

@@ -216,13 +216,13 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
         <div
           role="dialog"
           aria-label="Search"
-          className="w-full max-w-lg bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden pointer-events-auto"
+          className="w-full max-w-lg bg-[var(--bg-surface)] rounded-xl shadow-[var(--shadow-lg)] border border-[var(--border-default)] overflow-hidden pointer-events-auto"
           onKeyDown={handleKeyDown}
         >
           {/* Search input */}
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <div className="flex items-center gap-3 px-4 py-3 border-b border-[var(--border-default)]">
             <svg
-              className="h-5 w-5 text-gray-400 shrink-0"
+              className="h-5 w-5 text-[var(--text-muted)] shrink-0"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -237,9 +237,9 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search modules, contracts, entities..."
-              className="flex-1 bg-transparent text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 outline-none"
+              className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder-gray-400 outline-none"
             />
-            <kbd className="hidden sm:inline-block text-xs text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-1.5 py-0.5 rounded border border-gray-200 dark:border-gray-700">
+            <kbd className="hidden sm:inline-block text-xs text-[var(--text-muted)] bg-[var(--bg-inset)] px-1.5 py-0.5 rounded border border-[var(--border-default)]">
               Esc
             </kbd>
           </div>
@@ -247,13 +247,13 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
           {/* Results */}
           <div ref={listRef} role="listbox" className="max-h-80 overflow-y-auto p-2">
             {groups.length === 0 ? (
-              <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-6">
+              <p className="text-sm text-[var(--text-muted)] text-center py-6">
                 No results found
               </p>
             ) : (
               groups.map((group) => (
                 <div key={group.label} className="mb-2 last:mb-0">
-                  <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">
+                  <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                     {group.label}
                   </p>
                   {group.items.map(({ result, flatIndex }) => {
@@ -271,8 +271,8 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
                         onMouseEnter={() => setSelectedIndex(flatIndex)}
                         className={`w-full text-left flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm transition-colors
                           ${isSelected
-                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                            ? 'bg-[var(--accent)]/8 text-[var(--accent)]'
+                            : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-raised)]'
                           }`}
                       >
                         <span className="text-base shrink-0">{result.icon}</span>
@@ -286,17 +286,17 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
           </div>
 
           {/* Footer hint */}
-          <div className="px-4 py-2 border-t border-gray-200 dark:border-gray-700 flex items-center gap-4 text-[11px] text-gray-400 dark:text-gray-500">
+          <div className="px-4 py-2 border-t border-[var(--border-default)] flex items-center gap-4 text-[11px] text-[var(--text-muted)]">
             <span>
-              <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 mr-1">↑↓</kbd>
+              <kbd className="px-1 py-0.5 rounded border border-[var(--border-default)] bg-[var(--bg-inset)] mr-1">↑↓</kbd>
               navigate
             </span>
             <span>
-              <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 mr-1">↵</kbd>
+              <kbd className="px-1 py-0.5 rounded border border-[var(--border-default)] bg-[var(--bg-inset)] mr-1">↵</kbd>
               select
             </span>
             <span>
-              <kbd className="px-1 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-800 mr-1">esc</kbd>
+              <kbd className="px-1 py-0.5 rounded border border-[var(--border-default)] bg-[var(--bg-inset)] mr-1">esc</kbd>
               close
             </span>
           </div>
