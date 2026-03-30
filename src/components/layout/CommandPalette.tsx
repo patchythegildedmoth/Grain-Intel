@@ -2,6 +2,15 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { NAV_ITEMS } from './Sidebar';
 import { useContractStore } from '../../store/useContractStore';
 
+/** Session-level recently visited modules (most recent first, max 5) */
+const recentModules: string[] = [];
+function trackVisit(moduleId: string) {
+  const idx = recentModules.indexOf(moduleId);
+  if (idx >= 0) recentModules.splice(idx, 1);
+  recentModules.unshift(moduleId);
+  if (recentModules.length > 5) recentModules.length = 5;
+}
+
 interface CommandPaletteProps {
   open: boolean;
   onClose: () => void;
@@ -11,8 +20,9 @@ interface CommandPaletteProps {
 interface SearchResult {
   id: string;
   label: string;
-  group: 'Modules' | 'Contracts' | 'Entities' | 'Actions';
+  group: 'Recent' | 'Modules' | 'Contracts' | 'Entities' | 'Actions';
   icon: string;
+  hint?: string;
   action: () => void;
 }
 
@@ -61,15 +71,33 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
     const items: SearchResult[] = [];
     const q = query.toLowerCase().trim();
 
+    // Show recently visited when no query
+    if (!q && recentModules.length > 0) {
+      for (const modId of recentModules) {
+        const nav = NAV_ITEMS.find((n) => n.id === modId);
+        if (nav) {
+          items.push({
+            id: `recent-${nav.id}`,
+            label: nav.label,
+            group: 'Recent',
+            icon: nav.icon,
+            action: () => onNavigate(nav.id),
+          });
+        }
+      }
+    }
+
     // Always show modules if no query or matching
     const moduleResults: SearchResult[] = [];
-    for (const nav of NAV_ITEMS) {
+    for (let i = 0; i < NAV_ITEMS.length; i++) {
+      const nav = NAV_ITEMS[i];
       if (!q || nav.label.toLowerCase().includes(q) || nav.id.toLowerCase().includes(q)) {
         moduleResults.push({
           id: `mod-${nav.id}`,
           label: nav.label,
           group: 'Modules',
           icon: nav.icon,
+          hint: i < 9 ? `⌘${i + 1}` : undefined,
           action: () => onNavigate(nav.id),
         });
       }
@@ -188,7 +216,7 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
 
   // Group results for rendering
   const groups: { label: string; items: { result: SearchResult; flatIndex: number }[] }[] = [];
-  const groupOrder: SearchResult['group'][] = ['Modules', 'Contracts', 'Entities', 'Actions'];
+  const groupOrder: SearchResult['group'][] = ['Recent', 'Modules', 'Contracts', 'Entities', 'Actions'];
   let flatIdx = 0;
   for (const groupLabel of groupOrder) {
     const groupItems: { result: SearchResult; flatIndex: number }[] = [];
@@ -266,6 +294,10 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
                         data-selected={isSelected}
                         onClick={() => {
                           result.action();
+                          if (result.group === 'Modules' || result.group === 'Recent') {
+                            const modId = result.id.replace(/^(mod-|recent-)/, '');
+                            trackVisit(modId);
+                          }
                           onClose();
                         }}
                         onMouseEnter={() => setSelectedIndex(flatIndex)}
@@ -276,7 +308,12 @@ export function CommandPalette({ open, onClose, onNavigate }: CommandPaletteProp
                           }`}
                       >
                         <span className="text-base shrink-0">{result.icon}</span>
-                        <span className="truncate">{result.label}</span>
+                        <span className="truncate flex-1">{result.label}</span>
+                        {result.hint && (
+                          <kbd className="hidden sm:inline-block text-[10px] text-[var(--text-muted)] bg-[var(--bg-inset)] px-1 py-0.5 rounded border border-[var(--border-default)] ml-auto shrink-0">
+                            {result.hint}
+                          </kbd>
+                        )}
                       </button>
                     );
                   })}

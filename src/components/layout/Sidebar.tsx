@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useGlobalAlerts } from '../../hooks/useGlobalAlerts';
+import { MODULE_ICONS } from './SidebarIcons';
 
 export const NAV_ITEMS = [
   { id: 'morning-brief', label: 'Morning Brief', icon: '📋', group: 'main' },
@@ -56,8 +57,8 @@ export function Sidebar({ activeModule, onModuleChange }: SidebarProps) {
                   : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-raised)]'
                 }`}
             >
-              <span className="text-base relative">
-                {item.icon}
+              <span className="text-base relative flex items-center justify-center w-4 h-4">
+                {MODULE_ICONS[item.id] ? MODULE_ICONS[item.id]() : item.icon}
                 {/* Unvisited blue dot */}
                 {!visitedRef.current.has(item.id) && activeModule !== item.id && (
                   <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-blue-500 rounded-full" />

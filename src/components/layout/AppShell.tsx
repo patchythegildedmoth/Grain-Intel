@@ -1,5 +1,5 @@
 import { type ReactNode, useState, useEffect, useCallback } from 'react';
-import { Sidebar } from './Sidebar';
+import { Sidebar, NAV_ITEMS } from './Sidebar';
 import { DarkModeToggle } from './DarkModeToggle';
 import { AlertDrawer, AlertBellButton } from './AlertDrawer';
 import { CommandPalette } from './CommandPalette';
@@ -19,17 +19,30 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
   const [alertDrawerOpen, setAlertDrawerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Global Cmd+K / Ctrl+K shortcut
+  // Global keyboard shortcuts: Cmd+K (palette), Ctrl+1-9 (modules)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Ignore when typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
+
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
         setPaletteOpen((prev) => !prev);
+        return;
+      }
+
+      // Ctrl+1-9: navigate to numbered modules
+      if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '9') {
+        e.preventDefault();
+        const idx = parseInt(e.key) - 1;
+        if (idx < NAV_ITEMS.length) {
+          onModuleChange(NAV_ITEMS[idx].id);
+        }
       }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, []);
+  }, [onModuleChange]);
 
   const handlePaletteNavigate = useCallback(
     (moduleId: string) => {

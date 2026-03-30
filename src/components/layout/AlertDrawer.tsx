@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from 'react';
 import { useGlobalAlerts, type GlobalAlert } from '../../hooks/useGlobalAlerts';
 import { AlertBadge } from '../shared/AlertBadge';
 
@@ -105,6 +106,19 @@ function AlertSection({ title, alerts, onAlertClick }: { title: string; alerts: 
 /** Bell icon button for the header */
 export function AlertBellButton({ onClick }: { onClick: () => void }) {
   const { criticalCount } = useGlobalAlerts();
+  const prevCountRef = useRef(criticalCount);
+  const [popping, setPopping] = useState(false);
+
+  // Trigger pop animation when count changes
+  useEffect(() => {
+    if (criticalCount !== prevCountRef.current && criticalCount > 0) {
+      setPopping(true);
+      const timer = setTimeout(() => setPopping(false), 150);
+      prevCountRef.current = criticalCount;
+      return () => clearTimeout(timer);
+    }
+    prevCountRef.current = criticalCount;
+  }, [criticalCount]);
 
   return (
     <button
@@ -116,7 +130,7 @@ export function AlertBellButton({ onClick }: { onClick: () => void }) {
         <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
       </svg>
       {criticalCount > 0 && (
-        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+        <span className={`absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center ${popping ? 'animate-badge-pop' : ''}`}>
           {criticalCount > 9 ? '9+' : criticalCount}
         </span>
       )}

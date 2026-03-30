@@ -17,6 +17,8 @@ import {
 } from 'recharts';
 import { SegmentedControl } from '../shared/SegmentedControl';
 import { CrossModuleLink } from '../shared/CrossModuleLink';
+import { ExposureWaterfall } from '../shared/ExposureWaterfall';
+import { useMarketDataStore } from '../../store/useMarketDataStore';
 
 // --- Summary by type table ---
 const summaryCol = createColumnHelper<UnpricedSummaryRow>();
@@ -176,6 +178,10 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
     commoditySummaries, totalExposure, totalNetExposure,
     totalOverdue, totalUrgent, totalContracts, previousExposure,
   } = useUnpricedExposure();
+  const inTransit = useMarketDataStore((s) => s.current.inTransit);
+  const htaPaired = useMarketDataStore((s) => s.current.htaPaired);
+  const totalInTransit = Object.values(inTransit).reduce((s, v) => s + v, 0);
+  const totalHtaPaired = Object.values(htaPaired).reduce((s, v) => s + v, 0);
 
   // Day-over-day delta for net exposure
   const prevTotalNet = useMemo(() => {
@@ -252,6 +258,18 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+        </div>
+      )}
+
+      {/* Exposure Waterfall — summary tab only */}
+      {activeTab === 'summary' && totalExposure > 0 && (totalInTransit > 0 || totalHtaPaired > 0) && (
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
+          <h3 className="text-lg font-semibold mb-3">Exposure Waterfall</h3>
+          <ExposureWaterfall
+            grossExposure={totalExposure}
+            inTransit={totalInTransit}
+            htaPaired={totalHtaPaired}
+          />
         </div>
       )}
 

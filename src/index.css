@@ -127,6 +127,13 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Alert badge: scale-up pop on count change */
+@keyframes badge-pop {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
 .animate-page-transition {
   animation: fade-slide-in 150ms ease-out both;
 }
@@ -139,11 +146,16 @@ body {
   animation: delta-in 200ms ease-out both;
 }
 
+.animate-badge-pop {
+  animation: badge-pop 150ms ease-out;
+}
+
 /* Respect user's motion preference — disable all custom animations */
 @media (prefers-reduced-motion: reduce) {
   .animate-page-transition,
   .animate-card-in,
-  .animate-delta-in {
+  .animate-delta-in,
+  .animate-badge-pop {
     animation: none;
   }
 }
@@ -184,5 +196,27 @@ body {
   }
   table {
     font-size: 10px !important;
+  }
+
+  /* Page breaks: avoid splitting cards and tables across pages */
+  .rounded-lg, .rounded-xl {
+    break-inside: avoid;
+  }
+  section {
+    break-inside: avoid;
+  }
+
+  /* Print watermark — faint background text */
+  body::after {
+    content: 'GRAIN INTEL';
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 120px;
+    font-weight: 800;
+    color: rgba(0, 0, 0, 0.03);
+    pointer-events: none;
+    z-index: 0;
   }
 }

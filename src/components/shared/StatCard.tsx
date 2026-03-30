@@ -13,6 +13,8 @@ interface StatCardProps {
   colorClass?: string;
   /** 'hero' renders the value at text-3xl for the lead KPI on each screen */
   size?: 'default' | 'hero';
+  /** Optional sparkline data points (rendered as 24px SVG path) */
+  sparkline?: number[];
 }
 
 export function StatCard({
@@ -24,6 +26,7 @@ export function StatCard({
   deltaDirection,
   colorClass,
   size = 'default',
+  sparkline,
 }: StatCardProps) {
   const deltaColor =
     deltaDirection === 'up'
@@ -57,6 +60,44 @@ export function StatCard({
           {delta}
         </p>
       )}
+
+      {sparkline && sparkline.length >= 2 && <Sparkline data={sparkline} />}
     </div>
+  );
+}
+
+/** Tiny 24px-tall SVG sparkline. Green if trending up, red if down. */
+function Sparkline({ data }: { data: number[] }) {
+  const height = 24;
+  const width = 80;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+
+  const points = data.map((v, i) => {
+    const x = (i / (data.length - 1)) * width;
+    const y = height - ((v - min) / range) * (height - 4) - 2; // 2px padding
+    return `${x},${y}`;
+  });
+
+  const trending = data[data.length - 1] >= data[0];
+  const color = trending ? 'var(--positive)' : 'var(--negative)';
+
+  return (
+    <svg
+      width={width}
+      height={height}
+      className="mt-1.5 opacity-60"
+      viewBox={`0 0 ${width} ${height}`}
+    >
+      <polyline
+        points={points.join(' ')}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 }

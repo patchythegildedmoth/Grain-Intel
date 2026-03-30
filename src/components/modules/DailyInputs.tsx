@@ -561,27 +561,48 @@ export function DailyInputs() {
             </button>
           </div>
 
-          {/* Fetch result feedback */}
+          {/* Fetch result feedback — per-commodity chips */}
           {fetchResult && (
-            <div className={`mt-2 p-2 rounded-lg text-xs ${
-              fetchResult.failed.length > 0 && fetchResult.fetched === 0
-                ? 'bg-red-600/10 dark:bg-red-600/10/20 border border-red-600/20 dark:border-red-700 text-[var(--negative)] dark:text-red-300'
-                : fetchResult.failed.length > 0
-                  ? 'bg-amber-50 dark:bg-amber-500/10/20 border border-amber-500/20 dark:border-amber-700 text-[var(--warning)] dark:text-amber-300'
-                  : 'bg-green-50 dark:bg-green-900/20 border border-green-600/20 dark:border-green-700 text-green-700 dark:text-green-300'
-            }`}>
-              {fetchResult.fetched > 0 && (
-                <span>✓ Fetched {fetchResult.fetched} of {fetchResult.total} settlement prices. </span>
-              )}
-              {fetchResult.skipped.length > 0 && (
-                <span>Skipped: {fetchResult.skipped.join(', ')} (no CBOT futures). </span>
-              )}
-              {fetchResult.failed.length > 0 && (
-                <span>✗ Failed: {fetchResult.failed.join(', ')}. </span>
-              )}
-              {fetchResult.fetched > 0 && (
-                <span className="font-medium">Review values below, then click Save All.</span>
-              )}
+            <div className="mt-2 space-y-2">
+              <div className="flex flex-wrap gap-1.5">
+                {/* Show per-commodity results as color-coded chips */}
+                {(() => {
+                  // Group settlements by commodity
+                  const byCommodity = new Map<string, number>();
+                  for (const key of Object.keys(fetchResult.settlements)) {
+                    const commodity = key.split('|')[0];
+                    byCommodity.set(commodity, (byCommodity.get(commodity) ?? 0) + 1);
+                  }
+                  const chips: React.ReactNode[] = [];
+                  for (const [commodity, count] of byCommodity) {
+                    chips.push(
+                      <span key={commodity} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--positive)]/10 text-[var(--positive)] border border-[var(--positive)]/20">
+                        ✓ {commodity} ({count})
+                      </span>
+                    );
+                  }
+                  for (const commodity of fetchResult.skipped) {
+                    chips.push(
+                      <span key={`skip-${commodity}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--bg-inset)] text-[var(--text-muted)] border border-[var(--border-default)]">
+                        — {commodity}
+                      </span>
+                    );
+                  }
+                  for (const symbol of fetchResult.failed) {
+                    chips.push(
+                      <span key={`fail-${symbol}`} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-[var(--negative)]/10 text-[var(--negative)] border border-[var(--negative)]/20">
+                        ✗ {symbol}
+                      </span>
+                    );
+                  }
+                  return chips;
+                })()}
+              </div>
+              <p className={`text-xs ${fetchResult.failed.length > 0 ? 'text-[var(--warning)]' : 'text-[var(--positive)]'}`}>
+                {fetchResult.fetched > 0 && `${fetchResult.fetched}/${fetchResult.total} fetched. `}
+                {fetchResult.fetched > 0 && <span className="font-medium">Review values below, then Save All.</span>}
+                {fetchResult.fetched === 0 && fetchResult.failed.length > 0 && 'All fetches failed.'}
+              </p>
             </div>
           )}
         </div>
