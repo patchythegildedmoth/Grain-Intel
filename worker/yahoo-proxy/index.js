@@ -6,6 +6,7 @@
  *
  * Deploy: cd worker/yahoo-proxy && npx wrangler deploy
  * Usage:  GET https://<worker>.workers.dev/?symbol=ZCK26.CBT
+ *          GET https://<worker>.workers.dev/?symbol=ZC=F&period1=1640995200&period2=1703980800&interval=1d
  */
 
 const CORS_HEADERS = {
@@ -32,7 +33,17 @@ export default {
     }
 
     try {
-      const yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
+      // Support historical queries with period1/period2 (unix timestamps)
+      const period1 = url.searchParams.get('period1');
+      const period2 = url.searchParams.get('period2');
+      const interval = url.searchParams.get('interval') || '1d';
+
+      let yahooUrl;
+      if (period1 && period2) {
+        yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?period1=${period1}&period2=${period2}&interval=${interval}`;
+      } else {
+        yahooUrl = `https://query2.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=5d`;
+      }
       const resp = await fetch(yahooUrl, {
         headers: { 'User-Agent': 'Mozilla/5.0 (compatible; grain-intel/1.0)' },
       });
