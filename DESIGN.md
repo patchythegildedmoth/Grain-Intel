@@ -354,8 +354,14 @@ Min 2 chars to trigger. Arrow keys navigate, Enter selects, Escape closes.
 | P2 | Sparklines in StatCards (24px, from M2M snapshot history) | 4h | Planned |
 | P2 | Settlement fetch per-commodity progress UI | 2h | Planned |
 | P2 | Module keyboard shortcuts (1–9) | 2h | Planned |
+| P2 | Alert badge scale-up animation on count change (1.2x → 1.0x, 150ms) | 1h | Planned |
+| P2 | Command palette recently visited section + keyboard shortcut hints | 2h | Planned |
 | P3 | Exposure waterfall chart (Mixpanel-style funnel) | 4h | Planned |
+| P3 | Empty state improvements (no market data, no alerts, first visit messages) | 3h | Planned |
+| P3 | Print polish (watermark, data timestamp, page breaks) | 2h | Planned |
 | P3 | Sidebar SVG icons (replace emoji) | 3h | Planned |
+
+**Note:** Sound/haptic feedback explicitly not recommended for v1. Grain trading is a quiet, focused activity — revisit only if the app moves to mobile.
 
 **The signature moment:** When iRely data uploads and Morning Brief populates — KPIs animate in left-to-right (50ms stagger), numbers count up, alert badge counts up. Total ~800ms. Should feel like the dashboard "waking up" with the day's data.
 
@@ -402,6 +408,26 @@ Min 2 chars to trigger. Arrow keys navigate, Enter selects, Escape closes.
 - Clean form with clear section headings
 - "Fetch Settlements" with per-commodity progress (not just spinner)
 - Validation feedback inline (not modal alerts)
+
+### Freight Efficiency
+**Inspired by:** PlanetScale (performance comparison) + Linear (table density)
+- PlanetScale-style performance comparison layout for tier analysis
+- Horizontal bars for tier breakdown (proportion of bushels per tier)
+- Cost per bushel displayed in `font-data` mono for column alignment
+- Margin recovery percentages with color coding (`--positive` for recovered, `--negative` for unrecovered)
+
+### Basis Spread
+**Inspired by:** TradingView (spread chart quality) + Koyfin (futures curve overlay)
+- TradingView-style spread chart with futures curve overlay
+- Chart dominant at 60% of screen height, supporting data tables below
+- Spread values in `font-data` mono, carry cost highlighted with semantic color
+
+### Customer Concentration
+**Inspired by:** Radix UI (donut chart) + Linear (table density)
+- Radix-style donut chart for top 10 entities by volume
+- Entity table with concentration percentages in `font-data` mono
+- Red highlight (`--negative`) on entities exceeding 25% concentration threshold
+- Remaining entities grouped as "Other" in donut with `--text-muted` color
 
 ---
 

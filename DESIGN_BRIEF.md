@@ -1,156 +1,161 @@
-# Grain Intel Design Brief
+# Design Research Synthesis
 
-*Derived from design research across 15 best-in-class dashboards.*
-*See `DESIGN_RESEARCH/` for full site reviews, scorecard, and comparison data.*
+## The Core Insight
 
----
+After reviewing 15 best-in-class dashboards, one pattern emerges above all others: **the best dashboards are calm.** They don't shout. They don't compete for attention. They present information with such clear hierarchy that the user's eye goes exactly where it needs to go without any effort.
 
-## Problem Statement
-
-Grain Intel is functional but feels cluttered, hard to digest, and generic. The trader opens it every morning and it works, but it doesn't feel like a tool built for them. It feels like default Tailwind with data plugged in.
-
-## Design Vision
-
-**Grain Intel should feel like a Bloomberg terminal designed by the Linear team.** Dense, fast, professional, calm. Every pixel serves the trader's morning workflow. When they open it at 6 AM, the dashboard should communicate the state of the book in 3 seconds, then get out of the way.
+Grain Intel's problem isn't that it has too much data. It's that every piece of data gets equal visual weight. When everything is important, nothing is.
 
 ---
 
-## Design Principles
+## 5 Design Principles (Derived from Research)
 
-1. **Lead with the number that matters most.** Every screen has one hero metric. It's the biggest, boldest element.
-2. **Hierarchy through typography, not color.** Size and weight create hierarchy. Color is reserved for meaning.
-3. **One screen, one decision.** The answer to the trader's question should be above the fold.
-4. **Density is a feature, clutter is a bug.** Show more data, but with consistent patterns.
-5. **Delight is responsiveness.** Fast interactions, smooth transitions, numbers that feel alive.
+### 1. Lead with the Number That Matters Most
+*Inspired by: Plausible, Stripe, Robinhood*
+
+Every screen has one number that answers the question the trader came to ask. On Morning Brief, it's total unpriced exposure. On M2M, it's total book P&L. On Net Position, it's the largest net long or short.
+
+That number should be the biggest, boldest thing on the screen. Everything else supports it.
+
+### 2. Hierarchy Through Typography, Not Color
+*Inspired by: Linear, Vercel, Stripe*
+
+The top sites create visual hierarchy almost entirely through font size, weight, and spacing. Color is reserved for meaning (green = positive, red = negative, blue = interactive). Background colors are muted (cool grays, near-whites).
+
+Grain Intel should use:
+- Font size for hierarchy (big = important)
+- Font weight for emphasis (semibold headings, regular body)
+- Color only for semantic meaning (commodity codes, positive/negative, alerts)
+
+### 3. One Screen, One Decision
+*Inspired by: Plausible, Linear, Stripe*
+
+Each module view should answer one question without scrolling. The Morning Brief answers "What do I need to worry about?" Net Position answers "Where am I long and short?" M2M answers "What's my book P&L?"
+
+If the trader needs to scroll to find the answer, the layout needs work. Push detail below the fold, summary above.
+
+### 4. Density is a Feature, Clutter is a Bug
+*Inspired by: TradingView, Linear, Koyfin*
+
+High data density is desirable for power users. But density needs structure. Linear shows 50+ issues on screen without feeling crowded because every issue has exactly the same visual pattern. TradingView shows 100+ data points per chart because the grid, axes, and spacing are perfectly calibrated.
+
+Grain Intel should be dense but patterned. Every table row should look identical. Every card should have the same internal layout. Consistency creates density without clutter.
+
+### 5. Delight is Responsiveness
+*Inspired by: Robinhood, Linear, Vercel*
+
+Delight in a data dashboard means: hover states that respond instantly, numbers that feel alive (count up), transitions that guide the eye, and interactions that acknowledge the user's action. Not decoration. Not animation for its own sake.
 
 ---
 
-## Typography System (Implemented)
+## Specific Recommendations by Grain Intel Screen
 
-| Role | Font | Weight | Use |
-|------|------|--------|-----|
-| Display | Plus Jakarta Sans | 700-800 | Page titles, branding |
-| Body | DM Sans | 400-600 | All UI text, labels, nav |
-| Data | Geist Mono (tabular-nums) | 400-600 | Dollar amounts, bushels, percentages, timestamps |
-
-## Color System (Implemented)
-
-| Token | Light | Dark | Usage |
-|-------|-------|------|-------|
-| `--bg-base` | #F8FAFC | #0B1120 | Page background |
-| `--bg-surface` | #FFFFFF | #131B2E | Cards, panels |
-| `--accent` | #2563EB | #3B82F6 | Interactive elements, links |
-| `--positive` | #16A34A | #4ADE80 | Profit, long positions |
-| `--negative` | #DC2626 | #F87171 | Loss, short positions |
-| `--warning` | #D97706 | #FBBF24 | Urgency, overdue |
-
-Commodity colors preserved (Corn #EAB308, Soybeans #22C55E, etc.)
-
----
-
-## Per-Screen Recommendations
-
-### Morning Brief (Most Important)
-**Inspired by**: Plausible (single-screen overview) + Stripe (KPI cards) + Robinhood (signature moment)
-
-- Make it a single-screen executive summary. No scrolling needed.
-- Hero KPI: Total Unpriced Exposure at 36px, center of the top row
-- Secondary KPIs: Book P&L, Net Position, Hedge Ratio, Overdue Contracts
-- Add sparklines to each KPI card from M2M snapshot history
-- Alert banner below KPIs (already exists, keep it)
-- Stagger-animate cards on data load (50ms delay each, 800ms total)
-
-### Mark-to-Market
-**Inspired by**: Stripe (financial KPIs) + Robinhood (P&L trend line) + Shadcn (data table)
-
-- KPI strip at top: Total P&L (hero), Futures P&L, Basis P&L, Freight Impact
-- P&L trend sparkline below KPIs (from M2M snapshot history)
-- Per-commodity breakdown as expandable rows (click to see contracts)
-- Inline scenario sliders (keep, they're great)
-- Data table: add column visibility toggle
+### Morning Brief
+- **Layout**: Plausible-style single-screen overview. No scrolling needed.
+- **Typography**: Hero number (total unpriced exposure) at 36px bold. KPIs at 24px. Labels at 11px uppercase.
+- **Color**: Stripe-style metric cards. Green/red deltas. Blue accent for interactive elements.
+- **Delight**: Numbers count up on load. Cards stagger-animate in (50ms delay between each).
+- **Remove**: Cross-module link text below cards (use the cards themselves as links, which they already are).
 
 ### Net Position
-**Inspired by**: Koyfin (multi-panel) + TradingView (chart quality) + Linear (table density)
+- **Layout**: Linear-style compact table with commodity groupings.
+- **Typography**: Commodity names at 14px semibold. Numbers at 13px mono.
+- **Charts**: TradingView-style bar chart. Green for long, red for short. Crosshair on hover.
+- **Steal**: Koyfin's multi-panel layout (chart left, table right, or chart top, table bottom).
 
-- Chart and table side-by-side on desktop (chart left 50%, table right 50%)
-- Bar chart: green for long, red for short, per commodity
-- Table: compact rows (36px height), monospace numbers, subtle row hover
+### Mark-to-Market
+- **Layout**: Stripe-style KPI strip (total P&L, futures P&L, basis P&L) at top. Expandable commodity detail below.
+- **Typography**: Total P&L at 32px bold. Per-commodity at 16px. Contract detail at 13px mono in tables.
+- **Charts**: Robinhood-style P&L trend line (using M2M snapshot history). Single line, green if positive, red if negative.
+- **Delight**: Inline scenario sliders show live recalculation. Number changes animate.
 
 ### Unpriced Exposure
-**Inspired by**: Mixpanel (funnel visualization) + Plausible (clear metrics)
-
-- Exposure waterfall as a visual funnel (Gross → In-Transit → HTA-Paired → True Open)
-- Urgency color coding: red = overdue, amber = <=14 days, green = comfortable
-- Per-entity breakdown table with concentration warnings
+- **Layout**: Mixpanel-style funnel showing exposure breakdown (gross → in-transit → HTA-paired → true open).
+- **Typography**: Exposure amounts at 20px bold per commodity. Urgency badges at 11px.
+- **Color**: Red highlight for overdue, amber for urgent (<=14 days).
+- **Table**: Shadcn-style data table with column toggles and filtering.
 
 ### Delivery Timeline
-**Inspired by**: Linear (timeline/Gantt) + Observable (interactive charts)
-
-- Timeline bars showing contract delivery windows
-- This month / next month as the default view
-- Stacked bar chart: inbound (green) vs outbound (red) per month
+- **Layout**: Two-panel (this month / next month) with Gantt-style timeline bars.
+- **Charts**: Stacked bar (inbound green, outbound red) by month. Observable-style interactive tooltips.
+- **Steal**: Linear's timeline/Gantt view for delivery date ranges.
 
 ### Daily Inputs
-**Inspired by**: Radix UI (form patterns) + Shadcn (input components)
+- **Layout**: Clean form layout inspired by Radix UI form patterns.
+- **Typography**: Section headings at 16px semibold. Input labels at 13px medium. Values in mono.
+- **Delight**: "Fetch Settlements" shows per-commodity progress, not just a spinner.
+- **Steal**: Shadcn's form patterns (inline validation, clear error states).
 
-- Clean form with clear section headings
-- "Fetch Settlements" with per-commodity progress indicator
-- Validation feedback inline (not modal alerts)
+### Freight Efficiency
+- **Layout**: PlanetScale-style performance comparison. Tier breakdown as horizontal bars.
+- **Tables**: Cost per bushel in mono font. Margin recovery percentages with color coding.
+
+### Basis Spread
+- **Charts**: TradingView-style spread chart with futures curve overlay.
+- **Layout**: Chart dominant (60% of screen), supporting data below.
+
+### Customer Concentration
+- **Charts**: Radix-style donut chart for top 10 entities.
+- **Layout**: Entity table with concentration percentages. Red highlight at >25%.
 
 ---
 
-## Component Upgrades
+## Component Pattern Recommendations
 
-### StatCard v2
-- Add sparkline trend (24px tall, inline at bottom of card)
-- Hover: subtle lift (translateY -1px) + shadow increase
-- Numbers: count-up animation on load (400ms)
+### StatCard (Upgraded)
+```
+┌─────────────────────────┐
+│ UNPRICED EXPOSURE        │  ← 11px, uppercase, muted
+│ $2.4M                   │  ← 24px, semibold, primary
+│ ↑ 12% vs yesterday      │  ← 12px, green/red, mono
+│ ▁▂▃▅▇█▇▅▃ (sparkline)  │  ← 24px tall, inline
+└─────────────────────────┘
+```
+Add sparkline from M2M snapshot history. Show trend, not just current value.
 
-### DataTable v2
-- Column visibility dropdown (show/hide columns)
-- Per-column filter inputs
-- Compact mode option (36px rows vs 44px)
+### DataTable (Upgraded)
+- Column visibility toggle (dropdown showing/hiding columns)
+- Per-column search/filter
 - Sticky first column on horizontal scroll
-- No zebra striping (hover highlight only)
+- Zebra striping OFF (use hover highlight instead, like Linear)
+- Row height: 40px (current) → 36px (denser)
 
-### Navigation Upgrades
-- Number key shortcuts: 1-9 for modules
-- Recent modules section in Cmd+K palette
-- Active nav item: left accent border (2px) instead of background fill
+### AlertBadge (Current is Good)
+Keep the current dot + text pattern. Add subtle pulse animation on critical alerts.
 
----
-
-## Delight Roadmap
-
-| Priority | Feature | Effort |
-|----------|---------|--------|
-| P0 | Morning Brief card stagger animation | 2 hours |
-| P0 | StatCard hover lift effect | 30 min |
-| P1 | Number count-up animations | 3 hours |
-| P1 | Page transition (fade + slide up) | 1 hour |
-| P1 | Table row hover enhancement | 30 min |
-| P2 | Sparklines in StatCards | 4 hours |
-| P2 | Settlement fetch progress UI | 2 hours |
-| P2 | Module keyboard shortcuts (1-9) | 2 hours |
-| P3 | Exposure waterfall chart | 4 hours |
-| P3 | Sidebar SVG icons (replace emoji) | 3 hours |
+### SegmentedControl (Current is Good)
+The inset pill pattern is solid. Keep it.
 
 ---
 
-## What NOT to Do
+## Typography Recommendation
 
-1. **Don't add decorative elements.** No gradients, blobs, or illustrations. The data IS the design.
-2. **Don't use multiple accent colors.** One blue accent. Commodity colors are for data only.
-3. **Don't over-animate.** 150-400ms max. No bouncing, no elastic, no spring physics.
-4. **Don't reduce data density.** More white space between items is wrong for this app. Keep it dense but organized.
-5. **Don't copy Grafana's equal-weight panels.** Every section needs a clear visual priority.
+**Already implemented in design-system-v2:**
+- Display: Plus Jakarta Sans (headings, branding)
+- Body: DM Sans (all body text, labels, navigation)
+- Data: Geist Mono with tabular-nums (dollar amounts, bushel counts, percentages)
+
+This stack matches the best sites reviewed. Linear uses a similar approach (SF Pro for body, monospace for data). Stripe uses their custom font but follows the same display/body/data pattern.
 
 ---
 
-## Next Steps
+## Color System Recommendation
 
-1. Run `/design-consultation` with this brief as input to generate the updated DESIGN.md
-2. Implement P0 delight features (stagger animation, hover effects)
-3. Upgrade StatCard and DataTable components per recommendations
-4. Replace sidebar emoji with SVG icons
-5. Add keyboard shortcuts for module navigation
+**Already implemented in design-system-v2:**
+- Background: Cool slate (#F8FAFC light, #0B1120 dark)
+- Surface: White light, deep navy dark
+- Accent: Blue (#2563EB) for interactive elements
+- Semantic: Green for positive, red for negative, amber for warning
+- Commodity colors: Preserved (Corn yellow, Soybeans green, etc.)
+
+This matches the research findings. Stripe, Linear, and Plausible all use restrained color with semantic meaning.
+
+---
+
+## What to Remove or De-emphasize
+
+1. **Emoji icons in sidebar** — Replace with simple SVG icons (Linear and Vercel don't use emoji). Emoji feels casual for a trading tool.
+2. **Rounded-xl on everything** — Already changed to rounded-lg. Keep it.
+3. **Heavy borders** — Use more subtle borders and rely on spacing to separate sections.
+4. **Equal-weight sections** — Morning Brief sections should have clear visual hierarchy. Not all StatCards should be the same size.
+5. **Ghost preview opacity** — The 40% opacity ghost cards on the upload screen are too faint. Use 60% or add a label "Sample Data" to make it clearer this is a preview.
