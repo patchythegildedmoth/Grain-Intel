@@ -179,13 +179,13 @@ export function ScenarioPanel() {
         <h2 className="text-2xl font-bold">What-If Scenario Panel</h2>
         <button
           onClick={handleReset}
-          className="px-3 py-1.5 text-sm bg-gray-200 dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
+          className="px-3 py-1.5 text-sm bg-[var(--bg-inset)] dark:bg-gray-700 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors"
         >
           Reset to Current
         </button>
       </div>
 
-      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-800 dark:text-blue-200">
+      <div className="bg-blue-50 dark:bg-blue-950 border border-blue-600/20 dark:border-blue-600/20 rounded-lg p-3 text-sm text-[var(--accent)]">
         Adjust futures prices below to see the estimated impact on your open positions.
         This is a standalone simulation — it does not affect other modules.
       </div>
@@ -196,7 +196,7 @@ export function ScenarioPanel() {
           label="Total P&L Impact"
           value={formatCurrency(totalPnl)}
           deltaDirection={totalPnl > 0 ? 'up' : totalPnl < 0 ? 'down' : 'neutral'}
-          colorClass={totalPnl < 0 ? 'border-red-300 dark:border-red-700' : totalPnl > 0 ? 'border-green-300 dark:border-green-700' : ''}
+          colorClass={totalPnl < 0 ? 'border-red-600/20 dark:border-red-700' : totalPnl > 0 ? 'border-green-300 dark:border-green-700' : ''}
         />
         <StatCard label="Commodities" value={String(commodities.length)} />
         <StatCard
@@ -213,7 +213,7 @@ export function ScenarioPanel() {
 
       {/* P&L chart */}
       {chartData.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="text-lg font-semibold mb-3">P&L Impact by Commodity</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -232,7 +232,7 @@ export function ScenarioPanel() {
       )}
 
       {/* Price sliders */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
         <h3 className="text-lg font-semibold mb-4">Price Adjustments</h3>
         <div className="space-y-6">
           {sortedCommodities.map((commodity) => {
@@ -251,16 +251,16 @@ export function ScenarioPanel() {
                 {/* Futures slider */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase">Futures</span>
+                    <span className="text-[var(--text-muted)] text-xs font-medium uppercase">Futures</span>
                     <div className="flex items-center gap-3">
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-[var(--text-muted)]">
                         Current: {formatCurrency(currentFut)}
                       </span>
                       <span className="font-semibold">
                         {formatCurrency(scenarioFut)}
                       </span>
                       {futChange !== 0 && (
-                        <span className={futChange > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                        <span className={futChange > 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}>
                           ({futChange > 0 ? '+' : ''}{formatCurrency(futChange)})
                         </span>
                       )}
@@ -273,22 +273,22 @@ export function ScenarioPanel() {
                     step={0.05}
                     value={scenarioFut}
                     onChange={(e) => handlePriceChange(commodity, parseFloat(e.target.value))}
-                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    className="w-full h-2 bg-[var(--bg-inset)] dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-[var(--accent)]"
                   />
                 </div>
                 {/* Basis slider */}
                 <div className="space-y-1">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500 dark:text-gray-400 text-xs font-medium uppercase">Basis</span>
+                    <span className="text-[var(--text-muted)] text-xs font-medium uppercase">Basis</span>
                     <div className="flex items-center gap-3">
-                      <span className="text-gray-500 dark:text-gray-400">
+                      <span className="text-[var(--text-muted)]">
                         Current: {formatCurrency(currentBas)}
                       </span>
                       <span className="font-semibold">
                         {formatCurrency(scenarioBas)}
                       </span>
                       {basChange !== 0 && (
-                        <span className={basChange > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}>
+                        <span className={basChange > 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}>
                           ({basChange > 0 ? '+' : ''}{formatCurrency(basChange)})
                         </span>
                       )}
@@ -301,7 +301,7 @@ export function ScenarioPanel() {
                     step={0.01}
                     value={scenarioBas}
                     onChange={(e) => handleBasisChange(commodity, parseFloat(e.target.value))}
-                    className="w-full h-2 bg-gray-200 dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    className="w-full h-2 bg-[var(--bg-inset)] dark:bg-gray-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                   />
                 </div>
               </div>
@@ -311,9 +311,9 @@ export function ScenarioPanel() {
       </div>
 
       {/* Freight Tier What-If */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
         <h3 className="text-lg font-semibold mb-3">🚚 Freight Tier Cap</h3>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+        <p className="text-sm text-[var(--text-muted)] mb-4">
           What if all contracts above a certain tier were capped? See the margin impact of renegotiating freight terms.
         </p>
         <div className="flex items-center gap-4">
@@ -321,7 +321,7 @@ export function ScenarioPanel() {
           <select
             value={freightTierCap ?? ''}
             onChange={(e) => setFreightTierCap(e.target.value || null)}
-            className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm"
+            className="px-3 py-1.5 rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] dark:bg-gray-700 text-sm"
           >
             <option value="">No cap (current)</option>
             {TIER_LETTERS.filter((t) => t !== 'A').map((tier) => (
@@ -332,17 +332,17 @@ export function ScenarioPanel() {
           </select>
           {freightWhatIf && freightWhatIf.hasSellBasis && (
             <div className="flex items-center gap-3 text-sm">
-              <span className="text-gray-500 dark:text-gray-400">
+              <span className="text-[var(--text-muted)]">
                 {freightWhatIf.contractsAffected} contracts affected
               </span>
-              <span className={`font-semibold ${freightWhatIf.marginDelta > 0 ? 'text-green-600 dark:text-green-400' : freightWhatIf.marginDelta < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>
+              <span className={`font-semibold ${freightWhatIf.marginDelta > 0 ? 'text-[var(--positive)]' : freightWhatIf.marginDelta < 0 ? 'text-[var(--negative)]' : ''}`}>
                 {freightWhatIf.marginDelta > 0 ? '+' : ''}
                 {formatCurrency(freightWhatIf.marginDelta)} margin impact
               </span>
             </div>
           )}
           {freightWhatIf && !freightWhatIf.hasSellBasis && (
-            <span className="text-sm text-gray-400">Enter sell basis in Daily Inputs to see margin impact</span>
+            <span className="text-sm text-[var(--text-muted)]">Enter sell basis in Daily Inputs to see margin impact</span>
           )}
         </div>
       </div>
@@ -351,14 +351,14 @@ export function ScenarioPanel() {
       {scenarios.map((sc) => {
         if (sc.impacts.length === 0) return null;
         return (
-          <div key={sc.commodity} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+          <div key={sc.commodity} className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(sc.commodity) }} />
                 <h3 className="text-lg font-semibold">{sc.commodity}</h3>
               </div>
               <div className="flex items-center gap-2">
-                <span className={`font-semibold ${sc.totalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className={`font-semibold ${sc.totalPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                   {sc.totalPnl > 0 ? '+' : ''}{formatCurrency(sc.totalPnl)}
                 </span>
                 {sc.priceChange !== 0 && (
@@ -379,13 +379,13 @@ export function ScenarioPanel() {
               const nei = netExposureImpact.byCommodity.find((n) => n.commodity === sc.commodity);
               if (!nei) return null;
               return (
-                <div className="mb-3 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 text-sm">
-                  <span className="font-medium text-blue-800 dark:text-blue-200">Net Unpriced: </span>
-                  <span className={nei.netBu > 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}>
+                <div className="mb-3 px-3 py-2 rounded-lg bg-blue-50 dark:bg-blue-950 border border-blue-600/20 dark:border-blue-600/20 text-sm">
+                  <span className="font-medium text-[var(--accent)]">Net Unpriced: </span>
+                  <span className={nei.netBu > 0 ? 'text-green-700 dark:text-green-300' : 'text-[var(--negative)] dark:text-red-300'}>
                     {nei.netBu > 0 ? 'Long' : 'Short'} {formatBushelsShort(Math.abs(nei.netBu))}
                   </span>
                   {nei.impact !== 0 && (
-                    <span className={`ml-2 font-medium ${nei.impact >= 0 ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                    <span className={`ml-2 font-medium ${nei.impact >= 0 ? 'text-green-700 dark:text-green-300' : 'text-[var(--negative)] dark:text-red-300'}`}>
                       → {nei.impact > 0 ? '+' : ''}{formatCurrency(nei.impact)} impact
                     </span>
                   )}
@@ -402,18 +402,18 @@ export function ScenarioPanel() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium text-sm">{impact.pricingType}</span>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                      <span className="text-xs text-[var(--text-muted)]">
                         ({impact.contractCount} contracts, {formatBushelsShort(impact.totalBushels)} bu)
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{impact.explanation}</p>
+                    <p className="text-xs text-[var(--text-muted)] mt-0.5">{impact.explanation}</p>
                   </div>
                   <div className="text-right">
-                    <span className={`font-semibold text-sm ${impact.pnlImpact > 0 ? 'text-green-600 dark:text-green-400' : impact.pnlImpact < 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                    <span className={`font-semibold text-sm ${impact.pnlImpact > 0 ? 'text-[var(--positive)]' : impact.pnlImpact < 0 ? 'text-[var(--negative)]' : 'text-[var(--text-muted)]'}`}>
                       {impact.pnlImpact === 0 ? '$0.00' : `${impact.pnlImpact > 0 ? '+' : ''}${formatCurrency(impact.pnlImpact)}`}
                     </span>
                     {(impact.futuresImpact !== 0 || impact.basisImpact !== 0) && impact.pnlImpact !== 0 && (
-                      <div className="text-xs text-gray-400 dark:text-gray-500">
+                      <div className="text-xs text-[var(--text-muted)]">
                         {impact.futuresImpact !== 0 && <span>F: {impact.futuresImpact > 0 ? '+' : ''}{formatCurrency(impact.futuresImpact)}</span>}
                         {impact.futuresImpact !== 0 && impact.basisImpact !== 0 && <span> · </span>}
                         {impact.basisImpact !== 0 && <span>B: {impact.basisImpact > 0 ? '+' : ''}{formatCurrency(impact.basisImpact)}</span>}

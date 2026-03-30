@@ -17,23 +17,23 @@ export function Breadcrumb({ activeModule, activeTab, onNavigate }: BreadcrumbPr
   };
 
   return (
-    <nav className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 no-print" aria-label="Breadcrumb">
+    <nav className="flex items-center gap-1.5 text-xs text-[var(--text-muted)] no-print" aria-label="Breadcrumb">
       <button
         onClick={() => onNavigate('morning-brief')}
-        className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+        className="hover:text-[var(--accent)] dark:hover:text-blue-400 transition-colors"
       >
         Home
       </button>
-      <span className="text-gray-300 dark:text-gray-600">/</span>
+      <span className="text-[var(--text-muted)] dark:text-[var(--text-secondary)]">/</span>
       <span>{groupLabels[moduleInfo.group] ?? moduleInfo.group}</span>
-      <span className="text-gray-300 dark:text-gray-600">/</span>
-      <span className="text-gray-700 dark:text-gray-200 font-medium">
+      <span className="text-[var(--text-muted)] dark:text-[var(--text-secondary)]">/</span>
+      <span className="text-[var(--text-secondary)] font-medium">
         {moduleInfo.icon} {moduleInfo.label}
       </span>
       {activeTab && (
         <>
-          <span className="text-gray-300 dark:text-gray-600">/</span>
-          <span className="text-gray-700 dark:text-gray-200 font-medium capitalize">
+          <span className="text-[var(--text-muted)] dark:text-[var(--text-secondary)]">/</span>
+          <span className="text-[var(--text-secondary)] font-medium capitalize">
             {activeTab.replace(/-/g, ' ')}
           </span>
         </>

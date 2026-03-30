@@ -40,17 +40,17 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
   );
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+    <div className="flex flex-col h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       {/* Top bar */}
-      <header className="h-14 shrink-0 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 flex items-center px-4 gap-4 no-print">
-        <h1 className="text-lg font-bold text-gray-800 dark:text-gray-100 whitespace-nowrap">
-          Ag Source <span className="text-blue-600 dark:text-blue-400">Grain Intelligence</span>
+      <header className="h-14 shrink-0 border-b border-[var(--border-default)] bg-[var(--bg-surface)] flex items-center px-4 gap-4 no-print">
+        <h1 className="text-lg font-bold text-[var(--text-primary)] whitespace-nowrap">
+          Ag Source <span className="text-[var(--accent)]">Grain Intelligence</span>
         </h1>
 
         <div className="flex-1" />
 
         {fileName && (
-          <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-gray-400">
+          <div className="flex items-center gap-3 text-sm text-[var(--text-muted)]">
             <span className="truncate max-w-48" title={fileName}>{fileName}</span>
             {uploadDate && (
               <span className="text-xs">
@@ -59,7 +59,7 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
             )}
             <button
               onClick={() => { clearData(); onModuleChange('upload'); }}
-              className="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700"
+              className="text-xs px-2 py-1 rounded bg-[var(--bg-inset)] hover:bg-[var(--bg-surface-raised)]"
             >
               Re-upload
             </button>
@@ -68,13 +68,13 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
 
         <button
           onClick={() => setPaletteOpen(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm text-[var(--text-muted)] bg-[var(--bg-inset)] hover:bg-[var(--bg-surface-raised)] transition-colors"
           title="Search (⌘K)"
         >
           <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
           </svg>
-          <span className="hidden sm:inline text-xs text-gray-400 dark:text-gray-500">⌘K</span>
+          <span className="hidden sm:inline text-xs text-[var(--text-muted)]">⌘K</span>
         </button>
 
         <AlertBellButton onClick={() => setAlertDrawerOpen(!alertDrawerOpen)} />
@@ -102,7 +102,7 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
       />
 
       {/* Footer */}
-      <footer className="h-7 shrink-0 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center px-4 text-xs text-gray-400 dark:text-gray-500 no-print">
+      <footer className="h-7 shrink-0 border-t border-[var(--border-default)] bg-[var(--bg-surface)] flex items-center px-4 text-xs text-[var(--text-muted)] no-print">
         Grain Trading Intelligence Module v1.0.0 &middot; Ag Source LLC
       </footer>
 

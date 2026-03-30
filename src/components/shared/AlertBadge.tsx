@@ -1,10 +1,10 @@
 import type { AlertLevel } from '../../utils/alerts';
 
 const STYLES: Record<AlertLevel, string> = {
-  critical: 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800',
-  warning: 'bg-amber-100 dark:bg-amber-900 text-amber-800 dark:text-amber-200 border-amber-200 dark:border-amber-800',
-  info: 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 border-blue-200 dark:border-blue-800',
-  ok: 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800',
+  critical: 'bg-red-600/10 text-[var(--negative)] dark:text-[var(--negative)] border-red-600/20 dark:border-red-800',
+  warning: 'bg-amber-500/10 text-[var(--warning)] dark:text-[var(--warning)] border-amber-500/20 dark:border-amber-500/20',
+  info: 'bg-blue-600/10 text-[var(--accent)] border-blue-600/20 dark:border-blue-600/20',
+  ok: 'bg-green-600/10 text-[var(--positive)] dark:text-[var(--positive)] border-green-600/20 dark:border-green-600/20',
 };
 
 interface AlertBadgeProps {

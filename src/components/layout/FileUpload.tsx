@@ -37,19 +37,19 @@ export function FileUpload() {
         className={`w-full max-w-lg p-12 rounded-2xl border-2 border-dashed text-center transition-colors
           ${dragging
             ? 'border-blue-500 bg-blue-50 dark:bg-blue-950'
-            : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800'
+            : 'border-[var(--border-default)] bg-[var(--bg-surface)]'
           }`}
       >
         <div className="mb-4">
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 mx-auto text-[var(--text-muted)]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
           </svg>
         </div>
 
-        <h2 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
+        <h2 className="text-xl font-semibold text-[var(--text-secondary)] mb-2">
           Upload iRely Contract Export
         </h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+        <p className="text-sm text-[var(--text-muted)] mb-6">
           Drag and drop your Excel file here, or click to browse
         </p>
 
@@ -67,7 +67,7 @@ export function FileUpload() {
         </label>
 
         {error && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300">
+          <div className="mt-4 p-3 bg-red-600/10 dark:bg-red-600/10 border border-red-600/20 dark:border-red-800 rounded-lg text-sm text-[var(--negative)] dark:text-red-300">
             {error}
           </div>
         )}

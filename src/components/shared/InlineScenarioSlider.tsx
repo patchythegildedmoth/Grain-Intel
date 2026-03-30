@@ -24,7 +24,7 @@ export function InlineScenarioSlider({
 
   return (
     <div className="flex items-center gap-3 no-print">
-      <span className="text-xs font-medium text-gray-600 dark:text-gray-400 w-20 shrink-0">{label}</span>
+      <span className="text-xs font-medium text-[var(--text-secondary)] w-20 shrink-0">{label}</span>
       <input
         type="range"
         aria-label={label}
@@ -33,15 +33,15 @@ export function InlineScenarioSlider({
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="flex-1 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-blue-600"
+        className="flex-1 h-1.5 bg-[var(--bg-inset)] dark:bg-gray-700 rounded-full appearance-none cursor-pointer accent-[var(--accent)]"
       />
-      <span className={`text-xs font-mono w-16 text-right ${isChanged ? 'text-blue-600 dark:text-blue-400 font-semibold' : 'text-gray-500 dark:text-gray-400'}`}>
+      <span className={`text-xs font-data w-16 text-right ${isChanged ? 'text-[var(--accent)] font-semibold' : 'text-[var(--text-muted)]'}`}>
         {display}
       </span>
       {isChanged && (
         <button
           onClick={() => onChange(defaultValue)}
-          className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 px-1"
+          className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] dark:hover:text-[var(--text-muted)] px-1"
           title="Reset"
         >
           Reset
