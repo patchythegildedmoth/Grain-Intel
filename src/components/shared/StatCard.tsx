@@ -36,7 +36,7 @@ export function StatCard({
 
   return (
     <div
-      className={`rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 ${colorClass ?? ''} hover:-translate-y-px hover:shadow-md transition-all duration-150`}
+      className={`rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 ${colorClass ?? ''} hover:-translate-y-px hover:shadow-md transition-[transform,box-shadow,border-color] duration-150`}
     >
       <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
         {label}
