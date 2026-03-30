@@ -33,8 +33,8 @@ const summaryColumns = [
     header: 'Avg Days to Expiry',
     cell: (info) => {
       const v = info.getValue();
-      if (v < 0) return <span className="text-red-600 dark:text-red-400 font-semibold">{v}d (overdue)</span>;
-      if (v <= 14) return <span className="text-amber-600 dark:text-amber-400 font-semibold">{v}d</span>;
+      if (v < 0) return <span className="text-[var(--negative)] font-semibold">{v}d (overdue)</span>;
+      if (v <= 14) return <span className="text-[var(--warning)] font-semibold">{v}d</span>;
       return `${v}d`;
     },
   }),
@@ -89,8 +89,8 @@ const detailColumns = [
     header: 'Days Left',
     cell: (info) => {
       const v = info.getValue();
-      if (v < 0) return <span className="text-red-600 dark:text-red-400 font-semibold">{v}d</span>;
-      if (v <= 14) return <span className="text-amber-600 dark:text-amber-400 font-semibold">{v}d</span>;
+      if (v < 0) return <span className="text-[var(--negative)] font-semibold">{v}d</span>;
+      if (v <= 14) return <span className="text-[var(--warning)] font-semibold">{v}d</span>;
       return `${v}d`;
     },
   }),
@@ -129,8 +129,8 @@ const fmColumns = [
       if (v === 0) return '0';
       const label = v > 0 ? 'Long' : 'Short';
       const color = Math.abs(v) > 50_000
-        ? 'text-amber-600 dark:text-amber-400 font-semibold'
-        : v > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
+        ? 'text-[var(--warning)] font-semibold'
+        : v > 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]';
       return <span className={color}>{formatBushelsShort(v)} ({label})</span>;
     },
   }),
@@ -146,7 +146,7 @@ const fmColumns = [
           {fb.map((f) => (
             <div key={f.freightTerm}>
               <span className="font-medium">{f.freightTerm}:</span>{' '}
-              <span className={f.netExposure > 0 ? 'text-green-600 dark:text-green-400' : f.netExposure < 0 ? 'text-red-600 dark:text-red-400' : ''}>
+              <span className={f.netExposure > 0 ? 'text-[var(--positive)]' : f.netExposure < 0 ? 'text-[var(--negative)]' : ''}>
                 Net {formatBushelsShort(f.netExposure)}
               </span>
             </div>
@@ -199,7 +199,7 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Unpriced Exposure Report</h2>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <span className="text-sm text-[var(--text-muted)]">
           {totalContracts} unpriced contracts
         </span>
       </div>
@@ -220,7 +220,7 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
         <StatCard
           label="Overdue"
           value={String(totalOverdue)}
-          colorClass={totalOverdue > 0 ? 'border-red-300 dark:border-red-700' : ''}
+          colorClass={totalOverdue > 0 ? 'border-red-600/20 dark:border-red-700' : ''}
         />
         <StatCard
           label="Urgent (≤14d)"
@@ -231,7 +231,7 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
 
       {/* Exposure by commodity chart: summary tab only */}
       {activeTab === 'summary' && chartData.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="text-lg font-semibold mb-3">Unpriced Exposure by Commodity</h3>
           <ResponsiveContainer width="100%" height={250}>
             <BarChart data={chartData} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
@@ -261,14 +261,14 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
           <div className="flex items-center gap-3 flex-wrap">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(cs.commodity) }} />
             <h3 className="text-lg font-semibold">{cs.commodity}</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm text-[var(--text-muted)]">
               Gross: {formatBushelsShort(cs.totalExposure)} bu
             </span>
             <span className={`text-sm font-medium ${
-              cs.netExposure === 0 ? 'text-gray-500 dark:text-gray-400' :
-              Math.abs(cs.netExposure) > 50_000 ? 'text-amber-600 dark:text-amber-400' :
-              cs.netExposure > 0 ? 'text-green-600 dark:text-green-400' :
-              'text-red-600 dark:text-red-400'
+              cs.netExposure === 0 ? 'text-[var(--text-muted)]' :
+              Math.abs(cs.netExposure) > 50_000 ? 'text-[var(--warning)]' :
+              cs.netExposure > 0 ? 'text-[var(--positive)]' :
+              'text-[var(--negative)]'
             }`}>
               {formatNetLabel(cs.netExposure)}
             </span>
@@ -291,7 +291,7 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
           {/* Summary tab: type summary table */}
           {activeTab === 'summary' && (
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Summary by Type</h4>
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-1">Summary by Type</h4>
               <DataTable
                 data={cs.summaryRows}
                 columns={summaryColumns}
@@ -310,8 +310,8 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
           {activeTab === 'by-month' && (
             <>
               {cs.futuresMonthBreakdown.length > 1 && (
-                <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                  <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">
+                <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
+                  <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-3">
                     Exposure by Futures Month
                   </h4>
                   <ResponsiveContainer width="100%" height={200}>
@@ -351,7 +351,7 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
           {/* Contracts tab: full detail table */}
           {activeTab === 'contracts' && (
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-1">
                 Contract Detail ({cs.contracts.length} contracts)
               </h4>
               <DataTable data={cs.contracts} columns={detailColumns} />
@@ -361,7 +361,7 @@ export function UnpricedExposureReport({ onNavigate }: { onNavigate?: (id: strin
       ))}
 
       {totalContracts === 0 && (
-        <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+        <div className="text-center py-12 text-[var(--text-muted)]">
           No unpriced exposure found in current contracts.
         </div>
       )}

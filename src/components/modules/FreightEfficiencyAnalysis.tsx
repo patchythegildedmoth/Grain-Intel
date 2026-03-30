@@ -58,7 +58,7 @@ const marginColumns = [
     cell: (info) => {
       const v = info.getValue();
       if (v === null) return '—';
-      return <span className={v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}>{formatCurrency(v)}</span>;
+      return <span className={v < 0 ? 'text-[var(--negative)] font-semibold' : ''}>{formatCurrency(v)}</span>;
     },
   }),
   marginCol.accessor('netMarginPerBu', {
@@ -67,7 +67,7 @@ const marginColumns = [
       const v = info.getValue();
       if (v === null) return '—';
       return (
-        <span className={v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-green-600 dark:text-green-400'}>
+        <span className={v < 0 ? 'text-[var(--negative)] font-semibold' : 'text-[var(--positive)]'}>
           {formatCurrency(v)}
         </span>
       );
@@ -83,7 +83,7 @@ const marginColumns = [
       const v = info.getValue();
       if (v === null) return '—';
       return (
-        <span className={v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-green-600 dark:text-green-400'}>
+        <span className={v < 0 ? 'text-[var(--negative)] font-semibold' : 'text-[var(--positive)]'}>
           {formatCurrency(v)}
         </span>
       );
@@ -119,7 +119,7 @@ const riskColumns = [
     cell: (info) => {
       const v = info.getValue();
       if (v === null) return '—';
-      return <span className={v <= 0 ? 'text-red-600 dark:text-red-400 font-semibold' : ''}>{formatCurrency(v)}</span>;
+      return <span className={v <= 0 ? 'text-[var(--negative)] font-semibold' : ''}>{formatCurrency(v)}</span>;
     },
   }),
   riskCol.accessor('freightPercent', {
@@ -128,7 +128,7 @@ const riskColumns = [
       const v = info.getValue();
       if (v === null) return '—';
       return (
-        <span className={v > 50 ? 'text-red-600 dark:text-red-400 font-semibold' : v > 30 ? 'text-amber-600 dark:text-amber-400' : ''}>
+        <span className={v > 50 ? 'text-[var(--negative)] font-semibold' : v > 30 ? 'text-[var(--warning)]' : ''}>
           {v.toFixed(1)}%
         </span>
       );
@@ -163,7 +163,7 @@ const entityColumns = [
       const v = info.getValue();
       if (v === null) return '—';
       return (
-        <span className={v > 50 ? 'text-red-600 dark:text-red-400 font-semibold' : v > 30 ? 'text-amber-600 dark:text-amber-400' : ''}>
+        <span className={v > 50 ? 'text-[var(--negative)] font-semibold' : v > 30 ? 'text-[var(--warning)]' : ''}>
           {v.toFixed(1)}%
         </span>
       );
@@ -277,7 +277,7 @@ export function FreightEfficiencyAnalysis() {
     return (
       <div className="p-6">
         <h2 className="text-2xl font-bold mb-2">Freight Efficiency Analysis</h2>
-        <p className="text-gray-500 dark:text-gray-400">
+        <p className="text-[var(--text-muted)]">
           No open contracts with freight data. Upload iRely contracts to see freight efficiency metrics.
         </p>
       </div>
@@ -334,7 +334,7 @@ export function FreightEfficiencyAnalysis() {
       {/* Chart Row 1: Margin by Tier + Imbalance */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Net Margin by Tier */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="font-semibold mb-3">Net Margin by Tier ($/bu)</h3>
           {marginChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
@@ -355,12 +355,12 @@ export function FreightEfficiencyAnalysis() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-sm text-gray-400">Enter market data to see margin analysis</p>
+            <p className="text-sm text-[var(--text-muted)]">Enter market data to see margin analysis</p>
           )}
         </div>
 
         {/* Buy/Sell Volume by Tier */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="font-semibold mb-3">Buy vs. Sell Volume by Tier</h3>
           {imbalanceChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280}>
@@ -381,13 +381,13 @@ export function FreightEfficiencyAnalysis() {
               </ComposedChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-sm text-gray-400">No tier data available</p>
+            <p className="text-sm text-[var(--text-muted)]">No tier data available</p>
           )}
         </div>
       </div>
 
       {/* Chart Row 2: Freight Cost Trend (full width) */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 no-print">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 no-print">
         <h3 className="font-semibold mb-3">Blended Freight Cost Trend</h3>
         {costTrend.historicalPoints.length > 0 ? (
           <ResponsiveContainer width="100%" height={250}>
@@ -404,7 +404,7 @@ export function FreightEfficiencyAnalysis() {
             </LineChart>
           </ResponsiveContainer>
         ) : (
-          <div className="text-sm text-gray-400 py-8 text-center">
+          <div className="text-sm text-[var(--text-muted)] py-8 text-center">
             {costTrend.currentAvgCost !== null
               ? `Current blended cost: ${formatCurrency(costTrend.currentAvgCost)}/bu. Trend data will populate as daily M2M snapshots are saved.`
               : 'No freight tier data available'}
@@ -415,7 +415,7 @@ export function FreightEfficiencyAnalysis() {
       {/* Chart Row 3: Freight % by Commodity + Distribution */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 no-print">
         {/* Freight % by Commodity */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="font-semibold mb-3">Avg Freight % of Margin by Commodity</h3>
           {freightPercentChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={250}>
@@ -438,12 +438,12 @@ export function FreightEfficiencyAnalysis() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-sm text-gray-400">Enter market data to see freight % analysis</p>
+            <p className="text-sm text-[var(--text-muted)]">Enter market data to see freight % analysis</p>
           )}
         </div>
 
         {/* Distribution */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="font-semibold mb-3">Freight % Distribution</h3>
           <div className="space-y-3 mt-4">
             <DistributionRow label="< 10%" count={distribution.under10} total={freightMargin.contracts.length} color="bg-green-500" />
@@ -455,16 +455,16 @@ export function FreightEfficiencyAnalysis() {
       </div>
 
       {/* Detail Table 1: Margin by Commodity & Tier */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
         <h3 className="font-semibold mb-3">Margin by Commodity & Tier</h3>
         <DataTable columns={marginColumns} data={allMarginTiers} />
       </div>
 
       {/* Detail Table 2: Contract Freight Risk (print shows top 5) */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
         <h3 className="font-semibold mb-3">
           Contract Freight Risk
-          <span className="text-sm font-normal text-gray-500 dark:text-gray-400 ml-2">
+          <span className="text-sm font-normal text-[var(--text-muted)] ml-2">
             ({freightMargin.criticalCount} critical, {freightMargin.warningCount} warning)
           </span>
         </h3>
@@ -479,13 +479,13 @@ export function FreightEfficiencyAnalysis() {
       </div>
 
       {/* Detail Table 3: Entity Freight Breakdown */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 no-print">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 no-print">
         <h3 className="font-semibold mb-3">Freight Efficiency by Entity</h3>
         <DataTable columns={entityColumns} data={freightMargin.byEntity} />
       </div>
 
       {/* Print footer */}
-      <div className="hidden print:block text-center text-xs text-gray-400 mt-8 pt-4 border-t">
+      <div className="hidden print:block text-center text-xs text-[var(--text-muted)] mt-8 pt-4 border-t">
         Ag Source Grain Intelligence &middot; Freight Efficiency Analysis
       </div>
     </div>
@@ -499,13 +499,13 @@ function DistributionRow({ label, count, total, color }: { label: string; count:
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm font-medium w-16 text-right">{label}</span>
-      <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-5 relative overflow-hidden">
+      <div className="flex-1 bg-[var(--bg-inset)] dark:bg-gray-700 rounded-full h-5 relative overflow-hidden">
         <div
           className={`h-5 rounded-full ${color} transition-all`}
           style={{ width: `${pct}%` }}
         />
       </div>
-      <span className="text-sm font-mono w-12 text-right">{count}</span>
+      <span className="text-sm font-data w-12 text-right">{count}</span>
     </div>
   );
 }

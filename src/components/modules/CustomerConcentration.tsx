@@ -79,7 +79,7 @@ const profitColumns = [
       const v = info.getValue();
       if (v === null) return '—';
       return (
-        <span className={v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-green-600 dark:text-green-400'}>
+        <span className={v < 0 ? 'text-[var(--negative)] font-semibold' : 'text-[var(--positive)]'}>
           {formatCurrency(v)}/bu
         </span>
       );
@@ -134,7 +134,7 @@ export function CustomerConcentration() {
 
       {/* Donut chart */}
       {donutData.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="text-lg font-semibold mb-3">Top 10 Customers by Volume</h3>
           <ResponsiveContainer width="100%" height={300}>
             <PieChart>
@@ -169,12 +169,12 @@ export function CustomerConcentration() {
       {profitability.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold mb-2">Customer Profitability (Completed Trades)</h3>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+          <p className="text-xs text-[var(--text-muted)] mb-2">
             Approximate margin = Customer avg sell basis - Market avg buy basis
           </p>
           <DataTable data={profitability} columns={profitColumns} />
-          <div className="mt-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-            <p className="text-sm text-amber-800 dark:text-amber-200">
+          <div className="mt-3 bg-amber-50 dark:bg-amber-950 border border-amber-500/20 dark:border-amber-500/20 rounded-lg p-3">
+            <p className="text-sm text-[var(--warning)] dark:text-[var(--warning)]">
               <span className="font-semibold">Note:</span> Margin estimates do not include freight costs.
               Delivered customers may have lower true margins than shown.
               Pickup and FOB customers may have higher true margins than shown.

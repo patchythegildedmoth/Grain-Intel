@@ -11,12 +11,12 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, Re
 function FreightBreakdownCell({ items }: { items: FreightBasisBreakdown[] }) {
   if (items.length <= 1) return null;
   return (
-    <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+    <div className="text-xs text-[var(--text-muted)] mt-1 space-y-0.5">
       {items.map((fb) => (
         <div key={fb.freightTerm}>
           <span className="font-medium">{fb.freightTerm}:</span>{' '}
           {fb.avgBasis !== null ? formatBasis(fb.avgBasis) : '—'}{' '}
-          <span className="text-gray-400">({formatBushelsShort(fb.bushels)})</span>
+          <span className="text-[var(--text-muted)]">({formatBushelsShort(fb.bushels)})</span>
         </div>
       ))}
     </div>
@@ -56,7 +56,7 @@ const spreadColumns = [
       const v = info.getValue();
       if (v === null) return '—';
       return (
-        <span className={v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-green-600 dark:text-green-400'}>
+        <span className={v < 0 ? 'text-[var(--negative)] font-semibold' : 'text-[var(--positive)]'}>
           {formatCurrency(v)}
         </span>
       );
@@ -70,7 +70,7 @@ const spreadColumns = [
         <div>
           <div>{formatBushelsShort(info.getValue())}</div>
           {row.buyByFreight.length > 1 && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+            <div className="text-xs text-[var(--text-muted)] mt-1 space-y-0.5">
               {row.buyByFreight.map((fb) => (
                 <div key={fb.freightTerm}>
                   {fb.freightTerm}: {formatBushelsShort(fb.bushels)}
@@ -90,7 +90,7 @@ const spreadColumns = [
         <div>
           <div>{formatBushelsShort(info.getValue())}</div>
           {row.sellByFreight.length > 1 && (
-            <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 space-y-0.5">
+            <div className="text-xs text-[var(--text-muted)] mt-1 space-y-0.5">
               {row.sellByFreight.map((fb) => (
                 <div key={fb.freightTerm}>
                   {fb.freightTerm}: {formatBushelsShort(fb.bushels)}
@@ -138,7 +138,7 @@ const histColumns = [
       const v = info.getValue();
       if (v === null) return '—';
       return (
-        <span className={v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-green-600 dark:text-green-400'}>
+        <span className={v < 0 ? 'text-[var(--negative)] font-semibold' : 'text-[var(--positive)]'}>
           {formatCurrency(v)}
         </span>
       );
@@ -178,7 +178,7 @@ export function BasisSpreadAnalysis() {
         <StatCard
           label="Negative Spreads"
           value={String(overallStats.negativeCount)}
-          colorClass={overallStats.negativeCount > 0 ? 'border-red-300 dark:border-red-700' : ''}
+          colorClass={overallStats.negativeCount > 0 ? 'border-red-600/20 dark:border-red-700' : ''}
         />
         <StatCard
           label="Alerts"
@@ -193,7 +193,7 @@ export function BasisSpreadAnalysis() {
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(cs.commodity) }} />
             <h3 className="text-lg font-semibold">{cs.commodity}</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm text-[var(--text-muted)]">
               Spread: {cs.overallSpread !== null ? formatCurrency(cs.overallSpread) : '—'}/bu
             </span>
           </div>
@@ -215,7 +215,7 @@ export function BasisSpreadAnalysis() {
           {/* Current book spread table */}
           {cs.currentBook.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Current Book</h4>
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-1">Current Book</h4>
               <DataTable
                 data={cs.currentBook}
                 columns={spreadColumns}
@@ -232,8 +232,8 @@ export function BasisSpreadAnalysis() {
 
           {/* Monthly trend chart */}
           {cs.monthlyTrend.length > 1 && (
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-3">Spread Trend (Last 12 Months)</h4>
+            <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-3">Spread Trend (Last 12 Months)</h4>
               <ResponsiveContainer width="100%" height={200}>
                 <LineChart data={cs.monthlyTrend} margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>
                   <XAxis dataKey="monthLabel" tick={{ fontSize: 11 }} />
@@ -252,7 +252,7 @@ export function BasisSpreadAnalysis() {
           {/* Historical spreads */}
           {cs.historicalSpreads.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">Historical (Completed Trades)</h4>
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-1">Historical (Completed Trades)</h4>
               <DataTable data={cs.historicalSpreads} columns={histColumns} />
             </div>
           )}

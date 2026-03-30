@@ -66,8 +66,8 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
   if (!hasMarketData) {
     return (
       <div className="p-6 text-center">
-        <p className="text-lg font-semibold text-gray-600 dark:text-gray-300">Enter Market Data First</p>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+        <p className="text-lg font-semibold text-[var(--text-secondary)]">Enter Market Data First</p>
+        <p className="text-sm text-[var(--text-muted)] mt-1">
           Go to Daily Inputs to enter current futures settlements and sell basis levels.
         </p>
       </div>
@@ -86,7 +86,7 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100">Mark-to-Market Report</h2>
+        <h2 className="text-2xl font-bold text-[var(--text-primary)]">Mark-to-Market Report</h2>
         {/* Sparkline if we have history */}
         {sparklineData.length > 1 && (
           <div className="w-48 h-12">
@@ -101,7 +101,7 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                 />
               </LineChart>
             </ResponsiveContainer>
-            <p className="text-[10px] text-gray-400 text-center">P&L trend ({sparklineData.length} days)</p>
+            <p className="text-[10px] text-[var(--text-muted)] text-center">P&L trend ({sparklineData.length} days)</p>
           </div>
         )}
       </div>
@@ -147,14 +147,14 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
       <SegmentedControl segments={M2M_TABS} activeKey={activeTab} onChange={setActiveTab} />
 
       {/* Section A: Executive Summary */}
-      {activeTab === 'executive' && <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
-          <h3 className="font-semibold text-gray-800 dark:text-gray-200">Executive Summary</h3>
+      {activeTab === 'executive' && <section className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--border-default)] bg-[var(--bg-surface-raised)] dark:bg-gray-750">
+          <h3 className="font-semibold text-[var(--text-primary)]">Executive Summary</h3>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              <tr className="bg-[var(--bg-surface-raised)] dark:bg-gray-700 text-left text-xs font-medium text-[var(--text-muted)] uppercase">
                 <th className="px-4 py-2">Commodity</th>
                 <th className="px-4 py-2 text-right">Long Bu</th>
                 <th className="px-4 py-2 text-right">Short Bu</th>
@@ -168,7 +168,7 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
             </thead>
             <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
               {commoditySummaries.map((cs) => (
-                <tr key={cs.commodity} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                <tr key={cs.commodity} className="hover:bg-[var(--bg-surface-raised)] dark:hover:bg-gray-750">
                   <td className="px-4 py-2 font-medium">
                     <span className="inline-block w-2 h-2 rounded-full mr-2" style={{ backgroundColor: getCommodityColor(cs.commodity) }} />
                     {cs.commodity}
@@ -176,20 +176,20 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                   <td className="px-4 py-2 text-right">{formatKBushels(cs.longBushels)}</td>
                   <td className="px-4 py-2 text-right">{formatKBushels(cs.shortBushels)}</td>
                   <td className="px-4 py-2 text-right font-medium">{cs.netBushels >= 0 ? '+' : ''}{formatKBushels(cs.netBushels)}</td>
-                  <td className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">{formatKBushels(cs.inTransit)}</td>
-                  <td className="px-4 py-2 text-right text-gray-500 dark:text-gray-400">{formatKBushels(cs.htaPaired)}</td>
+                  <td className="px-4 py-2 text-right text-[var(--text-muted)]">{formatKBushels(cs.inTransit)}</td>
+                  <td className="px-4 py-2 text-right text-[var(--text-muted)]">{formatKBushels(cs.htaPaired)}</td>
                   <td className="px-4 py-2 text-right font-medium">{formatKBushels(cs.openExposure)}</td>
-                  <td className={`px-4 py-2 text-right font-medium ${cs.totalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <td className={`px-4 py-2 text-right font-medium ${cs.totalPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                     {formatCurrency(cs.totalPnl)}
                   </td>
-                  <td className={`px-4 py-2 text-right font-medium ${cs.openPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                  <td className={`px-4 py-2 text-right font-medium ${cs.openPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                     {formatCurrency(cs.openPnl)}
                   </td>
                 </tr>
               ))}
             </tbody>
             <tfoot>
-              <tr className="bg-gray-50 dark:bg-gray-750 font-semibold border-t-2 border-gray-300 dark:border-gray-600">
+              <tr className="bg-[var(--bg-surface-raised)] dark:bg-gray-750 font-semibold border-t-2 border-[var(--border-default)]">
                 <td className="px-4 py-2">Total</td>
                 <td className="px-4 py-2 text-right">{formatKBushels(commoditySummaries.reduce((s, c) => s + c.longBushels, 0))}</td>
                 <td className="px-4 py-2 text-right">{formatKBushels(commoditySummaries.reduce((s, c) => s + c.shortBushels, 0))}</td>
@@ -197,10 +197,10 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                 <td className="px-4 py-2 text-right">{formatKBushels(commoditySummaries.reduce((s, c) => s + c.inTransit, 0))}</td>
                 <td className="px-4 py-2 text-right">{formatKBushels(commoditySummaries.reduce((s, c) => s + c.htaPaired, 0))}</td>
                 <td className="px-4 py-2 text-right">{formatKBushels(commoditySummaries.reduce((s, c) => s + c.openExposure, 0))}</td>
-                <td className={`px-4 py-2 text-right ${totalBookPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <td className={`px-4 py-2 text-right ${totalBookPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                   {formatCurrency(totalBookPnl)}
                 </td>
-                <td className={`px-4 py-2 text-right ${totalOpenPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <td className={`px-4 py-2 text-right ${totalOpenPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                   {formatCurrency(totalOpenPnl)}
                 </td>
               </tr>
@@ -211,15 +211,15 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
 
       {/* Inline What-If Drawer — executive tab only */}
       {activeTab === 'executive' && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden no-print">
+        <div className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-default)] overflow-hidden no-print">
           <button
             onClick={() => setWhatIfOpen(!whatIfOpen)}
-            className="w-full px-4 py-3 flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors"
+            className="w-full px-4 py-3 flex items-center justify-between text-sm font-semibold text-[var(--text-primary)] hover:bg-[var(--bg-surface-raised)] dark:hover:bg-gray-750 transition-colors"
           >
             <span>
               What-If Scenario
               {whatIfTotalPnl !== 0 && (
-                <span className={`ml-2 text-xs font-normal ${whatIfTotalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                <span className={`ml-2 text-xs font-normal ${whatIfTotalPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                   ({whatIfTotalPnl >= 0 ? '+' : ''}{formatCurrency(whatIfTotalPnl)} impact)
                 </span>
               )}
@@ -229,16 +229,16 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
             </svg>
           </button>
           {whatIfOpen && (
-            <div className="px-4 pb-4 space-y-4 border-t border-gray-200 dark:border-gray-700 pt-3">
+            <div className="px-4 pb-4 space-y-4 border-t border-[var(--border-default)] pt-3">
               {whatIfScenarios.filter((s) => s.basisContracts > 0 || s.htaContracts > 0).map((sc) => {
                 const defaultFutures = sc.currentAvgFutures ?? 5;
                 const defaultBasis = sc.currentAvgBasis ?? 0;
                 return (
                   <div key={sc.commodity} className="space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{sc.commodity}</span>
+                      <span className="text-sm font-medium text-[var(--text-secondary)]">{sc.commodity}</span>
                       {sc.totalPnl !== 0 && (
-                        <span className={`text-xs font-semibold ${sc.totalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                        <span className={`text-xs font-semibold ${sc.totalPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                           {sc.totalPnl >= 0 ? '+' : ''}{formatCurrency(sc.totalPnl)}
                         </span>
                       )}
@@ -271,7 +271,7 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                 );
               })}
               {whatIfScenarios.filter((s) => s.basisContracts > 0 || s.htaContracts > 0).length === 0 && (
-                <p className="text-xs text-gray-500 dark:text-gray-400">No Basis or HTA contracts to model. All positions are fully priced.</p>
+                <p className="text-xs text-[var(--text-muted)]">No Basis or HTA contracts to model. All positions are fully priced.</p>
               )}
             </div>
           )}
@@ -289,17 +289,17 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
       {/* Per-commodity: FM Breakdown + Waterfall */}
       {activeTab === 'by-month' && commoditySummaries.map((cs) => (
         <div key={cs.commodity} className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 flex items-center gap-2">
+          <h3 className="text-lg font-semibold text-[var(--text-primary)] flex items-center gap-2">
             <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(cs.commodity) }} />
             {cs.commodity} — P&L by Futures Month
           </h3>
 
           {/* FM Table */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <section className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-default)] overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+                  <tr className="bg-[var(--bg-surface-raised)] dark:bg-gray-700 text-left text-xs font-medium text-[var(--text-muted)] uppercase">
                     <th className="px-4 py-2">Futures Mo.</th>
                     <th className="px-4 py-2 text-right">Long</th>
                     <th className="px-4 py-2 text-right">Short</th>
@@ -314,7 +314,7 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                 </thead>
                 <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {cs.byFuturesMonth.map((fm) => (
-                    <tr key={fm.sortKey} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                    <tr key={fm.sortKey} className="hover:bg-[var(--bg-surface-raised)] dark:hover:bg-gray-750">
                       <td className="px-4 py-2 font-medium">{fm.futuresMonth}</td>
                       <td className="px-4 py-2 text-right">{formatKBushels(fm.longBushels)}</td>
                       <td className="px-4 py-2 text-right">{formatKBushels(fm.shortBushels)}</td>
@@ -322,13 +322,13 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                       <td className="px-4 py-2 text-right">{fm.avgBuyBasis !== null ? formatBasis(fm.avgBuyBasis) : '—'}</td>
                       <td className="px-4 py-2 text-right">{fm.avgSellBasis !== null ? formatBasis(fm.avgSellBasis) : '—'}</td>
                       <td className="px-4 py-2 text-right">{fm.marketBasis !== null ? formatBasis(fm.marketBasis) : '—'}</td>
-                      <td className={`px-4 py-2 text-right ${fm.futuresPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <td className={`px-4 py-2 text-right ${fm.futuresPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                         {formatCurrency(fm.futuresPnl)}
                       </td>
-                      <td className={`px-4 py-2 text-right ${fm.basisPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <td className={`px-4 py-2 text-right ${fm.basisPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                         {formatCurrency(fm.basisPnl)}
                       </td>
-                      <td className={`px-4 py-2 text-right font-medium ${fm.totalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <td className={`px-4 py-2 text-right font-medium ${fm.totalPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                         {formatCurrency(fm.totalPnl)}
                       </td>
                     </tr>
@@ -339,9 +339,9 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
           </section>
 
           {/* Waterfall */}
-          <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
-              <h4 className="text-sm font-semibold text-gray-800 dark:text-gray-200">Exposure Waterfall</h4>
+          <section className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+            <div className="px-4 py-3 border-b border-[var(--border-default)] bg-[var(--bg-surface-raised)] dark:bg-gray-750">
+              <h4 className="text-sm font-semibold text-[var(--text-primary)]">Exposure Waterfall</h4>
             </div>
             <div className="p-4">
               <div className="space-y-2">
@@ -351,10 +351,10 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                   const isSubtraction = tier.bushels < 0;
                   return (
                     <div key={i} className="flex items-center gap-3">
-                      <div className="w-36 text-xs font-medium text-gray-600 dark:text-gray-400 text-right">
+                      <div className="w-36 text-xs font-medium text-[var(--text-secondary)] text-right">
                         {tier.label}
                       </div>
-                      <div className="flex-1 relative h-7 bg-gray-100 dark:bg-gray-700 rounded">
+                      <div className="flex-1 relative h-7 bg-[var(--bg-surface-raised)] dark:bg-gray-700 rounded">
                         <div
                           className={`h-full rounded ${
                             i === cs.waterfall.length - 1
@@ -366,7 +366,7 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                           style={{ width: `${Math.max(width, 2)}%` }}
                         />
                         <div className="absolute inset-0 flex items-center px-2 text-xs font-medium">
-                          <span className={width > 30 ? 'text-white' : 'text-gray-700 dark:text-gray-300 ml-1'}>
+                          <span className={width > 30 ? 'text-white' : 'text-[var(--text-secondary)] ml-1'}>
                             {isSubtraction ? '(' : ''}{formatKBushels(Math.abs(tier.bushels))}{isSubtraction ? ')' : ''}
                             {' · '}
                             {formatCurrency(tier.pnl)}
@@ -377,23 +377,23 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                   );
                 })}
               </div>
-              <p className="text-xs text-gray-400 mt-2">{cs.waterfall[cs.waterfall.length - 1]?.description}</p>
+              <p className="text-xs text-[var(--text-muted)] mt-2">{cs.waterfall[cs.waterfall.length - 1]?.description}</p>
             </div>
           </section>
         </div>
       ))}
 
       {/* Section C: Contract Detail */}
-      {activeTab === 'detail' && <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-750">
-          <h3 className="font-semibold text-gray-800 dark:text-gray-200">
+      {activeTab === 'detail' && <section className="bg-[var(--bg-surface)] rounded-xl shadow-sm border border-[var(--border-default)] overflow-hidden">
+        <div className="px-4 py-3 border-b border-[var(--border-default)] bg-[var(--bg-surface-raised)] dark:bg-gray-750">
+          <h3 className="font-semibold text-[var(--text-primary)]">
             Contract Detail ({allContracts.length} contracts)
           </h3>
         </div>
         <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
           <table className="w-full text-xs">
             <thead className="sticky top-0 z-10">
-              <tr className="bg-gray-100 dark:bg-gray-700 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              <tr className="bg-[var(--bg-surface-raised)] dark:bg-gray-700 text-left text-xs font-medium text-[var(--text-muted)] uppercase">
                 <th className="px-3 py-2">Contract</th>
                 <th className="px-3 py-2">Entity</th>
                 <th className="px-3 py-2">Cmdty</th>
@@ -413,7 +413,7 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
               {allContracts
                 .sort((a, b) => a.m2m.totalPnl - b.m2m.totalPnl)
                 .map((cm) => (
-                  <tr key={cm.contract.contractNumber} className="hover:bg-gray-50 dark:hover:bg-gray-750">
+                  <tr key={cm.contract.contractNumber} className="hover:bg-[var(--bg-surface-raised)] dark:hover:bg-gray-750">
                     <td className="px-3 py-1.5 font-mono">{cm.contract.contractNumber}</td>
                     <td className="px-3 py-1.5 truncate max-w-[100px]">{cm.contract.entity}</td>
                     <td className="px-3 py-1.5">{cm.contract.commodityCode}</td>
@@ -423,23 +423,23 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
                     <td className="px-3 py-1.5 text-right">{formatNumber(cm.contract.balance)}</td>
                     <td className="px-3 py-1.5 text-right">{cm.contract.cashPrice !== null ? formatCurrency(cm.contract.cashPrice) : '—'}</td>
                     <td className="px-3 py-1.5 text-right">{cm.currentMarketValue !== null ? formatCurrency(cm.currentMarketValue) : '—'}</td>
-                    <td className={`px-3 py-1.5 text-right ${(cm.m2m.futuresPnl ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <td className={`px-3 py-1.5 text-right ${(cm.m2m.futuresPnl ?? 0) >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                       {cm.m2m.futuresPnl !== null ? formatCurrency(cm.m2m.futuresPnl) : 'Open'}
                     </td>
-                    <td className={`px-3 py-1.5 text-right ${(cm.m2m.basisPnl ?? 0) >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <td className={`px-3 py-1.5 text-right ${(cm.m2m.basisPnl ?? 0) >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                       {cm.m2m.basisPnl !== null ? formatCurrency(cm.m2m.basisPnl) : 'Open'}
                     </td>
-                    <td className={`px-3 py-1.5 text-right font-medium ${cm.m2m.totalPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                    <td className={`px-3 py-1.5 text-right font-medium ${cm.m2m.totalPnl >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                       {cm.m2m.isMarkable ? formatCurrency(cm.m2m.totalPnl) : '—'}
                     </td>
                     <td className="px-3 py-1.5">
                       {!cm.m2m.isMarkable && (
-                        <span className="px-1.5 py-0.5 bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded text-xs" title={cm.m2m.missingReason ?? ''}>
+                        <span className="px-1.5 py-0.5 bg-[var(--bg-surface-raised)] text-[var(--text-secondary)] dark:bg-gray-700 dark:text-[var(--text-muted)] rounded text-xs" title={cm.m2m.missingReason ?? ''}>
                           No data
                         </span>
                       )}
                       {cm.m2m.isMarkable && cm.m2m.totalPnl < -10_000 && (
-                        <span className="px-1.5 py-0.5 bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded text-xs font-medium">
+                        <span className="px-1.5 py-0.5 bg-red-600/10 text-[var(--negative)] dark:bg-red-600/10/30 dark:text-red-400 rounded text-xs font-medium">
                           LOSS &gt;$10K
                         </span>
                       )}

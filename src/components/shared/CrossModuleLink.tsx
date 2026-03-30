@@ -8,7 +8,7 @@ export function CrossModuleLink({ label, moduleId, onNavigate }: CrossModuleLink
   return (
     <button
       onClick={() => onNavigate(moduleId)}
-      className="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors no-print"
+      className="inline-flex items-center gap-1 text-sm text-[var(--accent)] hover:text-[var(--accent-hover)] dark:hover:text-blue-300 font-medium transition-colors no-print"
     >
       {label}
       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

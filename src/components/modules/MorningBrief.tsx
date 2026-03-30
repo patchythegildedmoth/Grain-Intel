@@ -73,15 +73,15 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
       {/* Header */}
       <div className="print:text-center">
         <h2 className="text-2xl font-bold">Morning Brief</h2>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-[var(--text-muted)]">
           {dateStr} &middot; {fileName} &middot; Uploaded {uploadDate ? formatDate(uploadDate) : '—'}
         </p>
       </div>
 
       {/* Critical alerts banner */}
       {criticalAlerts.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <h3 className="font-semibold text-red-800 dark:text-red-200 mb-2">
+        <div className="bg-red-600/10 dark:bg-red-600/10 border border-red-600/20 dark:border-red-800 rounded-lg p-4">
+          <h3 className="font-semibold text-[var(--negative)] dark:text-[var(--negative)] mb-2">
             Action Required ({criticalAlerts.length})
           </h3>
           <div className="space-y-1 text-sm">
@@ -103,7 +103,7 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
             value={formatBushelsShort(totalExposure)}
             delta={`${netExposureLabel}${netExposureDelta !== null ? ` (${netExposureDelta >= 0 ? '+' : ''}${formatBushelsShort(netExposureDelta)})` : ''}`}
             deltaDirection={Math.abs(totalNetExposure) < (prevTotalNet !== null ? Math.abs(prevTotalNet) : Infinity) ? 'up' : totalNetExposure !== 0 ? 'down' : 'neutral'}
-            colorClass={`${totalOverdue > 0 ? 'border-red-300 dark:border-red-700' : ''} group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer`}
+            colorClass={`${totalOverdue > 0 ? 'border-red-600/20 dark:border-red-700' : ''} group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer`}
           />
         </a>
         <a href="#net-position" className="group">
@@ -160,8 +160,8 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
               colorClass="group-hover:border-blue-300 dark:group-hover:border-blue-600 transition-colors cursor-pointer"
             />
           </a>
-          <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3">
-            <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Carry / Inversion</div>
+          <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-3">
+            <div className="text-xs text-[var(--text-muted)] mb-1">Carry / Inversion</div>
             <div className="space-y-1">
               {priceLaterSummaries.filter((s) => s.carrySpread).map((s) => (
                 <div key={s.commodity} className="flex items-center justify-between text-xs">
@@ -169,14 +169,14 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
                   <span className={`px-1.5 py-0.5 rounded font-medium ${
                     s.carrySpread!.isInverted
                       ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
-                      : 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                      : 'bg-amber-500/10 text-[var(--warning)] dark:bg-amber-500/10/30 dark:text-amber-400'
                   }`}>
                     {s.carrySpread!.isInverted ? 'INV' : 'CARRY'} {formatBasis(s.carrySpread!.spread)}
                   </span>
                 </div>
               ))}
               {priceLaterSummaries.filter((s) => s.carrySpread).length === 0 && (
-                <span className="text-gray-400 text-xs">Enter market data</span>
+                <span className="text-[var(--text-muted)] text-xs">Enter market data</span>
               )}
             </div>
           </div>
@@ -193,19 +193,19 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
       )}
 
       {/* Net Position by Commodity — clickable */}
-      <a href="#net-position" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
+      <a href="#net-position" className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
         <h3 className="font-semibold mb-3">Net Position by Commodity</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {summaries.map((s) => (
-            <div key={s.commodity} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-750">
+            <div key={s.commodity} className="flex items-center gap-3 p-2 rounded-lg bg-[var(--bg-surface-raised)] dark:bg-gray-750">
               <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: getCommodityColor(s.commodity) }} />
               <div className="flex-1 min-w-0">
                 <div className="font-medium text-sm truncate">{s.commodity}</div>
-                <div className="text-xs text-gray-500 dark:text-gray-400">
+                <div className="text-xs text-[var(--text-muted)]">
                   L: {formatBushelsShort(s.totalLong)} / S: {formatBushelsShort(s.totalShort)}
                 </div>
               </div>
-              <div className={`text-sm font-semibold ${s.totalNet >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+              <div className={`text-sm font-semibold ${s.totalNet >= 0 ? 'text-[var(--positive)]' : 'text-[var(--negative)]'}`}>
                 {formatBushelsShort(s.totalNet)}
               </div>
             </div>
@@ -216,50 +216,50 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
       {/* Three-column section — clickable panels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Unpriced exposure */}
-        <a href="#unpriced-exposure" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
+        <a href="#unpriced-exposure" className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">Top Unpriced Exposure</h3>
           <div className="text-2xl font-bold">{formatBushelsShort(totalExposure)} bu</div>
           <div className={`text-sm font-medium mt-1 ${
-            totalNetExposure === 0 ? 'text-gray-500 dark:text-gray-400' :
-            Math.abs(totalNetExposure) > 75_000 ? 'text-amber-600 dark:text-amber-400' :
-            'text-gray-600 dark:text-gray-300'
+            totalNetExposure === 0 ? 'text-[var(--text-muted)]' :
+            Math.abs(totalNetExposure) > 75_000 ? 'text-[var(--warning)]' :
+            'text-[var(--text-secondary)]'
           }`}>
             {netExposureLabel}
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+          <div className="text-sm text-[var(--text-muted)] mt-0.5">
             {unpricedCount} contracts
-            {totalOverdue > 0 && <span className="text-red-600 dark:text-red-400"> ({totalOverdue} overdue)</span>}
-            {totalUrgent > 0 && <span className="text-amber-600 dark:text-amber-400"> ({totalUrgent} urgent)</span>}
+            {totalOverdue > 0 && <span className="text-[var(--negative)]"> ({totalOverdue} overdue)</span>}
+            {totalUrgent > 0 && <span className="text-[var(--warning)]"> ({totalUrgent} urgent)</span>}
           </div>
         </a>
 
         {/* This month deliveries */}
-        <a href="#delivery-timeline" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
+        <a href="#delivery-timeline" className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">This Month Deliveries</h3>
           {currentMonth ? (
             <>
               <div className="text-sm space-y-1">
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Inbound:</span>
-                  <span className="text-green-600 dark:text-green-400 font-medium">{formatBushelsShort(currentMonth.inboundBushels)}</span>
+                  <span className="text-[var(--text-muted)]">Inbound:</span>
+                  <span className="text-[var(--positive)] font-medium">{formatBushelsShort(currentMonth.inboundBushels)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500 dark:text-gray-400">Outbound:</span>
-                  <span className="text-red-600 dark:text-red-400 font-medium">{formatBushelsShort(currentMonth.outboundBushels)}</span>
+                  <span className="text-[var(--text-muted)]">Outbound:</span>
+                  <span className="text-[var(--negative)] font-medium">{formatBushelsShort(currentMonth.outboundBushels)}</span>
                 </div>
                 <div className="flex justify-between border-t border-gray-100 dark:border-gray-700 pt-1">
-                  <span className="text-gray-500 dark:text-gray-400">Net:</span>
+                  <span className="text-[var(--text-muted)]">Net:</span>
                   <span className="font-semibold">{formatBushelsShort(currentMonth.netFlow)}</span>
                 </div>
               </div>
             </>
           ) : (
-            <div className="text-sm text-gray-500 dark:text-gray-400">No deliveries this month</div>
+            <div className="text-sm text-[var(--text-muted)]">No deliveries this month</div>
           )}
         </a>
 
         {/* Current spreads */}
-        <a href="#basis-spread" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
+        <a href="#basis-spread" className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">Current Spreads</h3>
           <div className="space-y-1 text-sm">
             {spreadSummaries.slice(0, 5).map((s) => (
@@ -267,8 +267,8 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
                 <span>{s.commodity}</span>
                 <span className={
                   s.overallSpread === null ? 'text-gray-400' :
-                  s.overallSpread < 0 ? 'text-red-600 dark:text-red-400 font-semibold' :
-                  'text-green-600 dark:text-green-400'
+                  s.overallSpread < 0 ? 'text-[var(--negative)] font-semibold' :
+                  'text-[var(--positive)]'
                 }>
                   {s.overallSpread !== null ? formatCurrency(s.overallSpread) : '—'}
                 </span>
@@ -280,7 +280,7 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
 
       {/* Customer concentration + Risk — clickable */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <a href="#customer-concentration" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
+        <a href="#customer-concentration" className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">Top Customer Concentration</h3>
           <div className="space-y-1 text-sm">
             {customerSummaries.slice(0, 5).map((cs, i) => (
@@ -294,20 +294,20 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
           </div>
         </a>
 
-        <a href="#risk-profile" className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
+        <a href="#risk-profile" className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 hover:border-blue-300 dark:hover:border-blue-600 transition-colors cursor-pointer block">
           <h3 className="font-semibold mb-2">Hedge Ratio by Commodity</h3>
           <div className="space-y-1 text-sm">
             {profiles.map((p) => (
               <div key={p.commodity} className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: getCommodityColor(p.commodity) }} />
                 <span className="flex-1">{p.commodity}</span>
-                <div className="w-24 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div className="w-24 bg-[var(--bg-inset)] dark:bg-gray-700 rounded-full h-2">
                   <div
                     className={`h-2 rounded-full ${p.hedgeRatio >= 0.7 ? 'bg-green-500' : p.hedgeRatio >= 0.5 ? 'bg-amber-500' : 'bg-red-500'}`}
                     style={{ width: `${Math.min(p.hedgeRatio * 100, 100)}%` }}
                   />
                 </div>
-                <span className="font-mono w-12 text-right">{formatPercent(p.hedgeRatio)}</span>
+                <span className="font-data w-12 text-right">{formatPercent(p.hedgeRatio)}</span>
               </div>
             ))}
           </div>
@@ -315,7 +315,7 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
       </div>
 
       {/* Print footer */}
-      <div className="hidden print:block text-center text-xs text-gray-400 mt-8 pt-4 border-t">
+      <div className="hidden print:block text-center text-xs text-[var(--text-muted)] mt-8 pt-4 border-t">
         Ag Source Grain Intelligence &middot; Generated {dateStr}
       </div>
     </div>

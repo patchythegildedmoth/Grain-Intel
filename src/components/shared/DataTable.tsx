@@ -28,15 +28,15 @@ export function DataTable<T>({ data, columns, footerRow }: DataTableProps<T>) {
   });
 
   return (
-    <div className="overflow-x-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+    <div className="overflow-x-auto border border-[var(--border-default)] rounded-lg">
       <table className="w-full text-sm">
-        <thead className="bg-gray-50 dark:bg-gray-800 sticky top-0">
+        <thead className="bg-[var(--bg-inset)] sticky top-0">
           {table.getHeaderGroups().map((headerGroup) => (
             <tr key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
                 <th
                   key={header.id}
-                  className="px-3 py-2.5 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer select-none hover:bg-gray-100 dark:hover:bg-gray-700"
+                  className="px-3 py-2.5 text-left text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider cursor-pointer select-none hover:bg-[var(--bg-surface-raised)]"
                   onClick={header.column.getToggleSortingHandler()}
                 >
                   <div className="flex items-center gap-1">
@@ -49,11 +49,11 @@ export function DataTable<T>({ data, columns, footerRow }: DataTableProps<T>) {
             </tr>
           ))}
         </thead>
-        <tbody className="divide-y divide-gray-100 dark:divide-gray-800">
+        <tbody className="divide-y divide-[var(--border-subtle)]">
           {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+            <tr key={row.id} className="hover:bg-[var(--bg-surface-raised)]">
               {row.getVisibleCells().map((cell) => (
-                <td key={cell.id} className="px-3 py-2 text-gray-700 dark:text-gray-300 whitespace-nowrap">
+                <td key={cell.id} className="px-3 py-2 text-[var(--text-secondary)] whitespace-nowrap">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </td>
               ))}
@@ -61,10 +61,10 @@ export function DataTable<T>({ data, columns, footerRow }: DataTableProps<T>) {
           ))}
         </tbody>
         {footerRow && (
-          <tfoot className="bg-gray-100 dark:bg-gray-800 font-semibold">
+          <tfoot className="bg-[var(--bg-inset)] font-semibold">
             <tr>
               {table.getAllColumns().map((col) => (
-                <td key={col.id} className="px-3 py-2.5 text-gray-800 dark:text-gray-200 whitespace-nowrap">
+                <td key={col.id} className="px-3 py-2.5 text-[var(--text-primary)] whitespace-nowrap">
                   {footerRow[col.id] ?? ''}
                 </td>
               ))}
@@ -73,7 +73,7 @@ export function DataTable<T>({ data, columns, footerRow }: DataTableProps<T>) {
         )}
       </table>
       {data.length === 0 && (
-        <div className="p-8 text-center text-gray-400 dark:text-gray-500">
+        <div className="p-8 text-center text-[var(--text-muted)]">
           No data to display
         </div>
       )}

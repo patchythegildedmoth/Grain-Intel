@@ -15,18 +15,18 @@ const monthColumns = [
   monthCol.accessor('monthLabel', { header: 'Month' }),
   monthCol.accessor('inboundBushels', {
     header: 'Inbound (Bu)',
-    cell: (info) => <span className="text-green-600 dark:text-green-400">{formatBushelsShort(info.getValue())}</span>,
+    cell: (info) => <span className="text-[var(--positive)]">{formatBushelsShort(info.getValue())}</span>,
   }),
   monthCol.accessor('outboundBushels', {
     header: 'Outbound (Bu)',
-    cell: (info) => <span className="text-red-600 dark:text-red-400">{formatBushelsShort(info.getValue())}</span>,
+    cell: (info) => <span className="text-[var(--negative)]">{formatBushelsShort(info.getValue())}</span>,
   }),
   monthCol.accessor('netFlow', {
     header: 'Net Flow (Bu)',
     cell: (info) => {
       const v = info.getValue();
       return (
-        <span className={v < 0 ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-green-600 dark:text-green-400'}>
+        <span className={v < 0 ? 'text-[var(--negative)] font-semibold' : 'text-[var(--positive)]'}>
           {formatBushelsShort(v)}
         </span>
       );
@@ -43,9 +43,9 @@ const monthColumns = [
           {fb.map((f) => (
             <div key={f.term}>
               <span className="font-medium">{f.term}:</span>{' '}
-              <span className="text-green-600 dark:text-green-400">{formatBushelsShort(f.inbound)}</span>
+              <span className="text-[var(--positive)]">{formatBushelsShort(f.inbound)}</span>
               {' / '}
-              <span className="text-red-600 dark:text-red-400">{formatBushelsShort(f.outbound)}</span>
+              <span className="text-[var(--negative)]">{formatBushelsShort(f.outbound)}</span>
             </div>
           ))}
         </div>
@@ -89,8 +89,8 @@ const contractColumns = [
     header: 'Days Left',
     cell: (info) => {
       const v = info.getValue();
-      if (v < 0) return <span className="text-red-600 dark:text-red-400 font-semibold">{v}d</span>;
-      if (v <= 14) return <span className="text-amber-600 dark:text-amber-400 font-semibold">{v}d</span>;
+      if (v < 0) return <span className="text-[var(--negative)] font-semibold">{v}d</span>;
+      if (v <= 14) return <span className="text-[var(--warning)] font-semibold">{v}d</span>;
       return `${v}d`;
     },
   }),
@@ -159,7 +159,7 @@ export function DeliveryTimeline() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Delivery Timeline & Logistics</h2>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <span className="text-sm text-[var(--text-muted)]">
           {monthSummaries.length} delivery months
         </span>
       </div>
@@ -178,14 +178,14 @@ export function DeliveryTimeline() {
         <StatCard
           label="Past Due Months"
           value={String(pastDueMonths.length)}
-          colorClass={pastDueMonths.length > 0 ? 'border-red-300 dark:border-red-700' : ''}
+          colorClass={pastDueMonths.length > 0 ? 'border-red-600/20 dark:border-red-700' : ''}
         />
       </div>
 
       {/* Overview tab content */}
       {activeTab === 'overview' && pastDueMonths.length > 0 && (
-        <div className="bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2">Past-Due Deliveries</h4>
+        <div className="bg-red-600/10 dark:bg-red-600/10 border border-red-600/20 dark:border-red-800 rounded-lg p-4">
+          <h4 className="font-semibold text-[var(--negative)] dark:text-[var(--negative)] mb-2">Past-Due Deliveries</h4>
           <div className="space-y-2 text-sm">
             {pastDueMonths.map((m) => (
               <div key={m.monthKey} className="flex items-center gap-2">
@@ -199,7 +199,7 @@ export function DeliveryTimeline() {
       )}
 
       {activeTab === 'overview' && chartData.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="text-lg font-semibold mb-3">6-Month Forward View</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={chartData} stackOffset="sign" margin={{ top: 5, right: 20, bottom: 5, left: 20 }}>

@@ -14,7 +14,7 @@ export function DarkModeToggle() {
   return (
     <button
       onClick={() => setDark(!dark)}
-      className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300"
+      className="p-2 rounded-lg hover:bg-[var(--bg-surface-raised)] text-[var(--text-secondary)]"
       title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
     >
       {dark ? (
