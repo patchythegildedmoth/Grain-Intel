@@ -53,7 +53,7 @@ function costToTierLetter(cost: number): string | null {
   return closest;
 }
 
-export function useEntityMap(): EntityMapResult {
+export function useEntityMap(showAllGeocoded = false): EntityMapResult {
   const contracts = useContractStore((s) => s.contracts);
   const entityLocations = useEntityLocationStore((s) => s.entityLocations);
   const elevatorLocation = useEntityLocationStore((s) => s.elevatorLocation);
@@ -132,7 +132,28 @@ export function useEntityMap(): EntityMapResult {
       });
     }
 
-    // Sort mapped entities by volume descending
+    // Include geocoded entities that aren't in current contracts
+    if (showAllGeocoded) {
+      for (const [key, location] of Object.entries(entityLocations)) {
+        if (!byEntity.has(key)) {
+          mapEntities.push({
+            entity: location.entity,
+            lat: location.lat,
+            lon: location.lon,
+            address: location.address,
+            totalBushels: 0,
+            commodities: [],
+            primaryCommodity: 'Commodity Other',
+            contractCount: 0,
+            freightMix: [],
+            avgFreightTier: null,
+            avgFreightCostPerBu: null,
+          });
+        }
+      }
+    }
+
+    // Sort mapped entities by volume descending (active first, then geocoded-only)
     mapEntities.sort((a, b) => b.totalBushels - a.totalBushels);
 
     // Sort unmapped alphabetically
@@ -180,5 +201,5 @@ export function useEntityMap(): EntityMapResult {
       elevatorLocation,
       commodities,
     };
-  }, [contracts, entityLocations, elevatorLocation, freightTiers]);
+  }, [contracts, entityLocations, elevatorLocation, freightTiers, showAllGeocoded]);
 }

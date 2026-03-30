@@ -83,6 +83,8 @@ interface Props {
 }
 
 export function EntityLocationMap({ onNavigate }: Props) {
+  const [showAllGeocoded, setShowAllGeocoded] = useState(false);
+
   const {
     mapEntities,
     unmappedEntities,
@@ -93,7 +95,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
     farthestEntity,
     elevatorLocation,
     commodities,
-  } = useEntityMap();
+  } = useEntityMap(showAllGeocoded);
 
   const { setEntityLocation, setElevatorLocation, removeEntityLocation } = useEntityLocationStore();
 
@@ -201,6 +203,18 @@ export function EntityLocationMap({ onNavigate }: Props) {
         ))}
 
         <div className="flex-1" />
+
+        {/* Show all toggle */}
+        <button
+          onClick={() => setShowAllGeocoded(!showAllGeocoded)}
+          className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
+            showAllGeocoded
+              ? 'bg-blue-600 text-white border-transparent'
+              : 'text-[var(--text-muted)] border-[var(--border-default)] bg-transparent hover:bg-[var(--bg-surface)]'
+          }`}
+        >
+          {showAllGeocoded ? 'All Geocoded' : 'Active Only'}
+        </button>
 
         {/* Entity search */}
         <input
