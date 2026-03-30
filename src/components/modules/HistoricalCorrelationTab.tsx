@@ -36,33 +36,48 @@ export default function HistoricalCorrelationTab() {
   const [selectedCommodity, setSelectedCommodity] = useState('Corn');
   const [lookbackYears, setLookbackYears] = useState(2);
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [selectedLocationKey, setSelectedLocationKey] = useState<string>('');
 
   const entityLocations = useEntityLocationStore((s) => s.entityLocations);
   const forecasts = useWeatherStore((s) => s.forecasts);
   const { isLoading, isAvailable: dbAvailable, progress, result, error, yearsLoaded, fetchAndCorrelate, cancel } = useHistoricalCorrelation();
 
-  // Convert entity locations to the format the hook expects
+  // Convert entity locations to the format the hook expects, preserving display name
   const locations = Object.values(entityLocations).map((loc) => ({
     locationKey: loc.entity.trim().toUpperCase(),
+    displayName: loc.entity.trim(),
     lat: loc.lat,
     lon: loc.lon,
   }));
 
-  // Get forecast for first location (if any)
-  const firstLocationKey = locations[0]?.locationKey;
-  const forecast = firstLocationKey ? forecasts[firstLocationKey] ?? null : null;
+  // Init selected location when locations first load
+  useEffect(() => {
+    if (locations.length > 0 && !selectedLocationKey) {
+      setSelectedLocationKey(locations[0].locationKey);
+    }
+  }, [locations.length, selectedLocationKey]);
+
+  // Resolve selected location object and its forecast
+  const selectedLocation = locations.find((l) => l.locationKey === selectedLocationKey) ?? locations[0];
+  const forecast = selectedLocation ? forecasts[selectedLocation.locationKey] ?? null : null;
+
+  // Put selected location first so the hook correlates against it
+  const orderedLocations = selectedLocation
+    ? [selectedLocation, ...locations.filter((l) => l.locationKey !== selectedLocation.locationKey)]
+    : locations;
 
   // Auto-fetch on first render
   useEffect(() => {
-    if (!hasInitialized && locations.length > 0 && !isLoading) {
+    if (!hasInitialized && orderedLocations.length > 0 && !isLoading) {
       setHasInitialized(true);
-      fetchAndCorrelate(locations, selectedCommodity, forecast, lookbackYears);
+      fetchAndCorrelate(orderedLocations, selectedCommodity, forecast, lookbackYears);
     }
-  }, [hasInitialized, locations.length, isLoading, fetchAndCorrelate, selectedCommodity, forecast, lookbackYears, locations]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasInitialized, orderedLocations.length, isLoading]);
 
-  // Re-run correlation when commodity or lookback changes (after initial load)
+  // Re-run correlation when commodity, lookback, or location changes (after initial load)
   const handleRerun = () => {
-    fetchAndCorrelate(locations, selectedCommodity, forecast, lookbackYears);
+    fetchAndCorrelate(orderedLocations, selectedCommodity, forecast, lookbackYears);
   };
 
   // Empty state: no entity locations
@@ -101,6 +116,26 @@ export default function HistoricalCorrelationTab() {
     <div className="space-y-6">
       {/* Controls */}
       <div className="flex flex-wrap items-center gap-3">
+        {/* Location selector */}
+        <div className="flex items-center gap-2">
+          <label className="text-sm font-medium text-[var(--text-secondary)]">Location</label>
+          {locations.length <= 1 ? (
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              {selectedLocation?.displayName ?? '—'}
+            </span>
+          ) : (
+            <select
+              value={selectedLocationKey}
+              onChange={(e) => setSelectedLocationKey(e.target.value)}
+              className="text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] text-[var(--text-primary)] px-3 py-1.5"
+            >
+              {locations.map((l) => (
+                <option key={l.locationKey} value={l.locationKey}>{l.displayName}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-[var(--text-secondary)]">Commodity</label>
           <select
