@@ -3,6 +3,7 @@ import { describe, it, expect } from 'vitest';
 // Regression: ISSUE-001 — AnimatedNumber easing and value interpolation
 // Found by /qa on 2026-03-30
 // Report: .gstack/qa-reports/qa-report-localhost-2026-03-30.md
+// Updated: ISSUE-002 — NaN guard + prevValueRef continuity fix (adversarial review 2026-03-30)
 
 /**
  * Replicates the core math from AnimatedNumber.tsx.
@@ -92,6 +93,77 @@ describe('AnimatedNumber format function contract', () => {
     // Mid-animation: counting from 0 to 247 at progress=0.5
     const mid = interpolate(0, 247, 0.5);
     expect(fmt(mid)).toBe('216'); // 247 * 0.875 ≈ 216.1
+  });
+});
+
+describe('AnimatedNumber NaN guard (ISSUE-002)', () => {
+  /** Replicates the safeValue guard in AnimatedNumber.tsx */
+  function safeValue(v: number): number {
+    return Number.isFinite(v) ? v : 0;
+  }
+
+  it('passes through finite numbers unchanged', () => {
+    expect(safeValue(0)).toBe(0);
+    expect(safeValue(500_000)).toBe(500_000);
+    expect(safeValue(-250_000)).toBe(-250_000);
+    expect(safeValue(1.5)).toBe(1.5);
+  });
+
+  it('replaces NaN with 0 so format() never sees NaN', () => {
+    expect(safeValue(NaN)).toBe(0);
+    expect(safeValue(0 / 0)).toBe(0);
+  });
+
+  it('replaces Infinity with 0', () => {
+    expect(safeValue(Infinity)).toBe(0);
+    expect(safeValue(-Infinity)).toBe(0);
+  });
+
+  it('hedge ratio NaN (0 positions / 0 net) resolves to 0%, not NaN%', () => {
+    // Simulates overallHedgeRatio = 0/0 = NaN from useNetPosition when no contracts loaded
+    const hedgeRatio = 0 / 0; // NaN
+    const safe = safeValue(hedgeRatio);
+    expect(safe).toBe(0);
+    // format would produce "0.0%" not "NaN%"
+    const fmt = (n: number) => `${(n * 100).toFixed(1)}%`;
+    expect(fmt(safe)).toBe('0.0%');
+  });
+});
+
+describe('AnimatedNumber interrupted animation continuity (ISSUE-002)', () => {
+  /**
+   * Replicates the fix for BUG 1: prevValueRef must update continuously
+   * so an interrupted animation starts from the current displayed position,
+   * not from the last completed animation's end value.
+   */
+
+  it('continuous prevValueRef update: mid-point equals interpolated value', () => {
+    // Simulates: animation from 0 → 125k, interrupted at progress=0.875 (87.5%)
+    const start = 0;
+    const end = 125_000;
+    const progressAtInterrupt = 0.875;
+    const eased = 1 - Math.pow(1 - progressAtInterrupt, 3); // ≈ 0.998
+    const currentAtInterrupt = start + (end - start) * eased;
+    // After the fix, prevValueRef.current === currentAtInterrupt at this point
+    // A new animation starting from prevValueRef goes forward from here, not from 0
+    expect(currentAtInterrupt).toBeGreaterThan(100_000);
+    expect(currentAtInterrupt).toBeLessThan(125_000);
+  });
+
+  it('restart from mid-animation position: no backward jump', () => {
+    // Bug: prevValueRef=0, interrupted at displayValue=109k, new animation starts from 0 (wrong)
+    // Fix: prevValueRef=109k, new animation starts from 109k (correct)
+    const displayedWhenInterrupted = 109_375; // 125k * 0.875
+    const newTarget = 150_000;
+
+    // Wrong (old): start from 0
+    const wrongStart = interpolate(0, newTarget, 0); // = 0
+    // Correct (new): start from displayed value
+    const correctStart = interpolate(displayedWhenInterrupted, newTarget, 0); // = 109_375
+
+    expect(correctStart).toBe(displayedWhenInterrupted);
+    expect(wrongStart).toBe(0);
+    expect(correctStart).toBeGreaterThan(wrongStart); // no backward jump
   });
 });
 

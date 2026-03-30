@@ -151,6 +151,14 @@ body {
 /* ─── Print ───────────────────────────────────────────────────── */
 
 @media print {
+  /* Freeze all animations so Morning Brief prints in its final, fully-visible state.
+     Without this, Cmd+P during the 300ms card stagger can capture cards at partial opacity. */
+  .animate-page-transition,
+  .animate-card-in,
+  .animate-delta-in {
+    animation: none;
+  }
+
   .no-print {
     display: none !important;
   }
