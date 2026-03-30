@@ -79,7 +79,7 @@ export function ContractTypeRiskProfile() {
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(profile.commodity) }} />
             <h3 className="text-lg font-semibold">{profile.commodity}</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm text-[var(--text-muted)]">
               Hedge: {formatPercent(profile.hedgeRatio)}
             </span>
           </div>
@@ -100,8 +100,8 @@ export function ContractTypeRiskProfile() {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Pie chart */}
-            <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Composition</h4>
+            <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-2">Composition</h4>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie
@@ -125,8 +125,8 @@ export function ContractTypeRiskProfile() {
 
             {/* Stacked bar showing Basis/HTA by futures month */}
             {profile.futuresMonthDetail.length > 0 && (
-              <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
-                <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">Basis & HTA by Futures Month</h4>
+              <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
+                <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-2">Basis & HTA by Futures Month</h4>
                 <ResponsiveContainer width="100%" height={200}>
                   <BarChart
                     data={(() => {
@@ -171,7 +171,7 @@ export function ContractTypeRiskProfile() {
           {/* Futures month detail for Basis/HTA */}
           {profile.futuresMonthDetail.length > 0 && (
             <div>
-              <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-1">
                 Basis & HTA Futures Month Detail
               </h4>
               <DataTable data={profile.futuresMonthDetail} columns={fmColumns} />

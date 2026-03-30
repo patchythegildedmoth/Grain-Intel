@@ -15,7 +15,7 @@ const nullColumns = [
     cell: (info) => {
       const v = info.getValue();
       return (
-        <span className={v > 0.1 ? 'text-red-600 dark:text-red-400 font-semibold' : v > 0.01 ? 'text-amber-600 dark:text-amber-400' : ''}>
+        <span className={v > 0.1 ? 'text-[var(--negative)] font-semibold' : v > 0.01 ? 'text-[var(--warning)]' : ''}>
           {formatPercent(v)}
         </span>
       );
@@ -48,7 +48,7 @@ export function DataHealth() {
     return (
       <div className="p-6">
         <h2 className="text-2xl font-bold mb-4">Data Health</h2>
-        <p className="text-gray-500 dark:text-gray-400">No data loaded.</p>
+        <p className="text-[var(--text-muted)]">No data loaded.</p>
       </div>
     );
   }
@@ -58,44 +58,44 @@ export function DataHealth() {
       <h2 className="text-2xl font-bold">Data Health</h2>
 
       {/* File info */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
         <h3 className="text-lg font-semibold mb-3">Import Summary</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
           <div>
-            <span className="text-gray-500 dark:text-gray-400">File:</span>{' '}
+            <span className="text-[var(--text-muted)]">File:</span>{' '}
             <span className="font-medium">{fileName}</span>
           </div>
           <div>
-            <span className="text-gray-500 dark:text-gray-400">Uploaded:</span>{' '}
+            <span className="text-[var(--text-muted)]">Uploaded:</span>{' '}
             <span className="font-medium">{uploadDate ? formatDate(uploadDate) : '—'}</span>
           </div>
           <div>
-            <span className="text-gray-500 dark:text-gray-400">Total Rows:</span>{' '}
+            <span className="text-[var(--text-muted)]">Total Rows:</span>{' '}
             <span className="font-medium">{validation.totalRows.toLocaleString()}</span>
           </div>
         </div>
       </div>
 
       {/* Pipeline stats */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
         <h3 className="text-lg font-semibold mb-3">Pipeline</h3>
         <div className="flex flex-wrap items-center gap-2 text-sm font-mono">
-          <span className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">
+          <span className="bg-[var(--bg-surface-raised)] dark:bg-gray-700 px-2 py-1 rounded">
             Parsed {validation.totalRows.toLocaleString()}
           </span>
-          <span className="text-gray-400">&rarr;</span>
-          <span className="bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 px-2 py-1 rounded">
+          <span className="text-[var(--text-muted)]">&rarr;</span>
+          <span className="bg-red-600/10 dark:bg-red-600/10 text-[var(--negative)] dark:text-red-300 px-2 py-1 rounded">
             -{validation.cancelledCount} cancelled
           </span>
-          <span className="text-gray-400">&rarr;</span>
-          <span className="bg-amber-50 dark:bg-amber-950 text-amber-700 dark:text-amber-300 px-2 py-1 rounded">
+          <span className="text-[var(--text-muted)]">&rarr;</span>
+          <span className="bg-amber-50 dark:bg-amber-950 text-[var(--warning)] dark:text-amber-300 px-2 py-1 rounded">
             -{validation.organicCount} organic
           </span>
-          <span className="text-gray-400">&rarr;</span>
+          <span className="text-[var(--text-muted)]">&rarr;</span>
           <span className="bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300 px-2 py-1 rounded">
             {validation.usableCount.toLocaleString()} usable
           </span>
-          <span className="text-gray-400">&rarr;</span>
+          <span className="text-[var(--text-muted)]">&rarr;</span>
           <span className="bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-1 rounded">
             {validation.openCount} open
           </span>
@@ -103,12 +103,12 @@ export function DataHealth() {
       </div>
 
       {/* Column validation */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
         <h3 className="text-lg font-semibold mb-3">Column Validation</h3>
         {validation.missingColumns.length > 0 ? (
           <div className="mb-3">
             <AlertBadge level="critical">MISSING COLUMNS</AlertBadge>
-            <div className="mt-2 text-sm text-red-600 dark:text-red-400">
+            <div className="mt-2 text-sm text-[var(--negative)]">
               {validation.missingColumns.join(', ')}
             </div>
           </div>
@@ -125,7 +125,7 @@ export function DataHealth() {
                 key={col}
                 className={`text-xs px-2 py-1 rounded ${
                   missing
-                    ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                    ? 'bg-red-600/10 text-[var(--negative)] dark:text-red-300'
                     : 'bg-green-50 dark:bg-green-950 text-green-700 dark:text-green-300'
                 }`}
               >
@@ -138,7 +138,7 @@ export function DataHealth() {
 
       {/* Data distribution */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h4 className="font-semibold mb-2">By Status</h4>
           <div className="space-y-1 text-sm">
             {statusBreakdown.map((s) => (
@@ -149,7 +149,7 @@ export function DataHealth() {
             ))}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h4 className="font-semibold mb-2">By Commodity</h4>
           <div className="space-y-1 text-sm">
             {commodityBreakdown.map((c) => (
@@ -160,7 +160,7 @@ export function DataHealth() {
             ))}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h4 className="font-semibold mb-2">By Pricing Type</h4>
           <div className="space-y-1 text-sm">
             {pricingTypeBreakdown.map((p) => (
@@ -171,7 +171,7 @@ export function DataHealth() {
             ))}
           </div>
         </div>
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h4 className="font-semibold mb-2">By Contract Type</h4>
           <div className="space-y-1 text-sm">
             {contractTypeBreakdown.map((ct) => (
@@ -196,19 +196,19 @@ export function DataHealth() {
       <div>
         <h3 className="text-lg font-semibold mb-2">
           Anomalies
-          <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+          <span className="ml-2 text-sm font-normal text-[var(--text-muted)]">
             ({validation.anomalies.length} found)
           </span>
         </h3>
         {validation.anomalies.length > 0 ? (
           <DataTable data={validation.anomalies.slice(0, 100)} columns={anomalyColumns} />
         ) : (
-          <div className="text-center py-6 text-gray-500 dark:text-gray-400 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+          <div className="text-center py-6 text-[var(--text-muted)] bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)]">
             No anomalies detected.
           </div>
         )}
         {validation.anomalies.length > 100 && (
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-sm text-[var(--text-muted)] mt-1">
             Showing first 100 of {validation.anomalies.length} anomalies.
           </p>
         )}

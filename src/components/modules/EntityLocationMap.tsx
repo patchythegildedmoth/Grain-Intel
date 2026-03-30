@@ -32,7 +32,7 @@ const tableColumns = [
   col.accessor('entity', { header: 'Entity' }),
   col.accessor('address', {
     header: 'Location',
-    cell: (info) => <span className="text-xs text-gray-500 dark:text-gray-400">{info.getValue()}</span>,
+    cell: (info) => <span className="text-xs text-[var(--text-muted)]">{info.getValue()}</span>,
   }),
   col.accessor('totalBushels', {
     header: 'Bushels',
@@ -192,7 +192,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
             className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
               activeCommodities.has(c)
                 ? 'text-white border-transparent'
-                : 'text-gray-400 border-gray-300 dark:border-gray-600 bg-transparent'
+                : 'text-[var(--text-muted)] border-[var(--border-default)] bg-transparent'
             }`}
             style={activeCommodities.has(c) ? { backgroundColor: getCommodityColor(c) } : undefined}
           >
@@ -208,7 +208,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
           placeholder="Search entities..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 w-48"
+          className="px-3 py-1.5 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] dark:bg-gray-700 w-48"
         />
 
         {/* Manage Locations button */}
@@ -233,9 +233,9 @@ export function EntityLocationMap({ onNavigate }: Props) {
       )}
 
       {/* Map */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden no-print">
+      <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] overflow-hidden no-print">
         {!hasContracts ? (
-          <div className="h-[400px] flex items-center justify-center text-gray-400">
+          <div className="h-[400px] flex items-center justify-center text-[var(--text-muted)]">
             Upload iRely contracts to see entities on the map
           </div>
         ) : (
@@ -268,7 +268,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
                 <Popup>
                   <strong>{elevatorLocation.name}</strong>
                   <br />
-                  <span className="text-xs text-gray-500">Elevator Location</span>
+                  <span className="text-xs text-[var(--text-muted)]">Elevator Location</span>
                 </Popup>
               </Marker>
             )}
@@ -289,7 +289,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
                 <Popup>
                   <div className="text-sm min-w-[200px]">
                     <div className="font-bold text-base mb-1">{entity.entity}</div>
-                    <div className="text-gray-500 text-xs mb-2">{entity.address}</div>
+                    <div className="text-[var(--text-muted)] text-xs mb-2">{entity.address}</div>
                     <div className="space-y-1">
                       <div className="flex justify-between">
                         <span>Volume:</span>
@@ -308,7 +308,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
                         </div>
                       )}
                     </div>
-                    <div className="mt-2 pt-2 border-t border-gray-200">
+                    <div className="mt-2 pt-2 border-t border-[var(--border-default)]">
                       <div className="text-xs font-medium mb-1">Commodities:</div>
                       {entity.commodities.map((c) => (
                         <div key={c.commodity} className="flex items-center gap-1.5 text-xs">
@@ -317,7 +317,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
                             style={{ backgroundColor: getCommodityColor(c.commodity) }}
                           />
                           <span>{c.commodity}</span>
-                          <span className="text-gray-400 ml-auto">{formatBushelsShort(c.bushels)}</span>
+                          <span className="text-[var(--text-muted)] ml-auto">{formatBushelsShort(c.bushels)}</span>
                         </div>
                       ))}
                     </div>
@@ -331,14 +331,14 @@ export function EntityLocationMap({ onNavigate }: Props) {
 
       {/* Entity Detail Table */}
       {mapEntities.length > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="font-semibold mb-3">Mapped Entities ({mapEntities.length})</h3>
           <DataTable columns={tableColumns} data={filteredEntities} />
         </div>
       )}
 
       {/* Print footer */}
-      <div className="hidden print:block text-center text-xs text-gray-400 mt-8 pt-4 border-t">
+      <div className="hidden print:block text-center text-xs text-[var(--text-muted)] mt-8 pt-4 border-t">
         Ag Source Grain Intelligence &middot; Entity Map
       </div>
     </div>
@@ -470,21 +470,21 @@ function LocationManager({
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-5 no-print">
+    <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4 space-y-5 no-print">
       <h3 className="font-semibold text-lg">Location Manager</h3>
 
       {/* Elevator Setup */}
       <div className="space-y-2">
-        <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Elevator Location</h4>
+        <h4 className="text-sm font-medium text-[var(--text-secondary)]">Elevator Location</h4>
         {elevatorLocation ? (
           <div className="text-sm">
             <span className="font-medium">{elevatorLocation.name}</span>
-            <span className="text-gray-400 ml-2">
+            <span className="text-[var(--text-muted)] ml-2">
               ({elevatorLocation.lat.toFixed(4)}, {elevatorLocation.lon.toFixed(4)})
             </span>
           </div>
         ) : (
-          <p className="text-xs text-gray-400">Not set — configure your elevator's location</p>
+          <p className="text-xs text-[var(--text-muted)]">Not set — configure your elevator's location</p>
         )}
         <div className="flex gap-2">
           <input
@@ -492,7 +492,7 @@ function LocationManager({
             placeholder="Elevator name"
             value={elevatorName}
             onChange={(e) => setElevatorName(e.target.value)}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 w-40"
+            className="px-3 py-1.5 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] dark:bg-gray-700 w-40"
           />
           <input
             type="text"
@@ -500,7 +500,7 @@ function LocationManager({
             value={elevatorAddress}
             onChange={(e) => setElevatorAddress(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSetElevator()}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 flex-1"
+            className="px-3 py-1.5 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] dark:bg-gray-700 flex-1"
           />
           <button
             onClick={handleSetElevator}
@@ -514,12 +514,12 @@ function LocationManager({
 
       {/* Add Single Entity */}
       <div className="space-y-2">
-        <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Add Entity Location</h4>
+        <h4 className="text-sm font-medium text-[var(--text-secondary)]">Add Entity Location</h4>
         <div className="flex gap-2">
           <select
             value={entityName}
             onChange={(e) => setEntityName(e.target.value)}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 w-56"
+            className="px-3 py-1.5 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] dark:bg-gray-700 w-56"
           >
             <option value="">Select entity...</option>
             {unmappedEntities.map((e) => (
@@ -532,7 +532,7 @@ function LocationManager({
             value={entityAddress}
             onChange={(e) => setEntityAddress(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleAddEntity()}
-            className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 flex-1"
+            className="px-3 py-1.5 text-sm rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] dark:bg-gray-700 flex-1"
           />
           <button
             onClick={handleAddEntity}
@@ -546,8 +546,8 @@ function LocationManager({
 
       {/* CSV Upload */}
       <div className="space-y-2">
-        <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">Bulk Import (CSV)</h4>
-        <p className="text-xs text-gray-400">
+        <h4 className="text-sm font-medium text-[var(--text-secondary)]">Bulk Import (CSV)</h4>
+        <p className="text-xs text-[var(--text-muted)]">
           Upload a CSV with columns: Entity Name, Address (or Entity Name, City, State)
         </p>
         <div className="flex gap-2 items-center">
@@ -557,22 +557,22 @@ function LocationManager({
             accept=".csv,.txt"
             onChange={handleCSVUpload}
             disabled={!!batchProgress}
-            className="text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-gray-300 dark:file:border-gray-600 file:text-sm file:font-medium file:bg-white dark:file:bg-gray-700 file:text-gray-700 dark:file:text-gray-300 hover:file:bg-gray-50 dark:hover:file:bg-gray-600 file:transition-colors"
+            className="text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border file:border-[var(--border-default)] dark:file:border-gray-600 file:text-sm file:font-medium file:bg-[var(--bg-surface)] dark:file:bg-gray-700 file:text-[var(--text-secondary)] dark:file:text-[var(--text-muted)] hover:file:bg-[var(--bg-surface-raised)] dark:hover:file:bg-gray-600 file:transition-colors"
           />
           {batchProgress && (
             <>
-              <div className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+              <div className="flex-1 bg-[var(--bg-inset)] dark:bg-gray-700 rounded-full h-2">
                 <div
                   className="bg-blue-600 h-2 rounded-full transition-all"
                   style={{ width: `${(batchProgress.done / batchProgress.total) * 100}%` }}
                 />
               </div>
-              <span className="text-xs text-gray-500">
+              <span className="text-xs text-[var(--text-muted)]">
                 {batchProgress.done}/{batchProgress.total}
               </span>
               <button
                 onClick={handleCancelBatch}
-                className="text-xs text-red-600 hover:text-red-700 font-medium"
+                className="text-xs text-[var(--negative)] hover:text-[var(--negative)] font-medium"
               >
                 Cancel
               </button>
@@ -583,22 +583,22 @@ function LocationManager({
 
       {/* Status message */}
       {geocodeMsg && (
-        <p className="text-sm text-blue-600 dark:text-blue-400">{geocodeMsg}</p>
+        <p className="text-sm text-[var(--accent)]">{geocodeMsg}</p>
       )}
 
       {/* Mapped entities list (compact) */}
       {mappedEntities.length > 0 && (
         <div className="space-y-1">
-          <h4 className="text-sm font-medium text-gray-600 dark:text-gray-400">
+          <h4 className="text-sm font-medium text-[var(--text-secondary)]">
             Mapped Entities ({mappedEntities.length})
           </h4>
           <div className="max-h-40 overflow-y-auto space-y-0.5">
             {mappedEntities.map((e) => (
-              <div key={e.entity} className="flex items-center justify-between text-xs py-1 px-2 rounded hover:bg-gray-50 dark:hover:bg-gray-750">
+              <div key={e.entity} className="flex items-center justify-between text-xs py-1 px-2 rounded hover:bg-[var(--bg-surface-raised)] dark:hover:bg-gray-750">
                 <span className="font-medium">{e.entity}</span>
                 <button
                   onClick={() => onRemoveEntity(e.entity)}
-                  className="text-red-500 hover:text-red-700 text-xs"
+                  className="text-red-500 hover:text-[var(--negative)] text-xs"
                   title="Remove location"
                 >
                   remove

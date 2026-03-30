@@ -29,7 +29,7 @@ const columns = [
       const v = info.getValue();
       const isShort = v < 0;
       return (
-        <span className={isShort ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-green-600 dark:text-green-400'}>
+        <span className={isShort ? 'text-[var(--negative)] font-semibold' : 'text-[var(--positive)]'}>
           {formatBushelsShort(v)}
         </span>
       );
@@ -50,7 +50,7 @@ const columns = [
       if (v === null) return '—';
       const isNeg = v < 0;
       return (
-        <span className={isNeg ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}>
+        <span className={isNeg ? 'text-[var(--negative)]' : 'text-[var(--positive)]'}>
           {formatCurrency(v)}
         </span>
       );
@@ -107,7 +107,7 @@ export function NetPositionDashboard({ onNavigate }: { onNavigate?: (id: string)
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Net Position Dashboard</h2>
-        <span className="text-sm text-gray-500 dark:text-gray-400">
+        <span className="text-sm text-[var(--text-muted)]">
           {openContractCount} open contracts
         </span>
       </div>
@@ -126,13 +126,13 @@ export function NetPositionDashboard({ onNavigate }: { onNavigate?: (id: string)
         <StatCard
           label="Short Alerts"
           value={String(shortAlerts.length)}
-          colorClass={shortAlerts.length > 0 ? 'border-red-300 dark:border-red-700' : ''}
+          colorClass={shortAlerts.length > 0 ? 'border-red-600/20 dark:border-red-700' : ''}
         />
       </div>
 
       {/* Charts — Overview shows top 3, Charts tab shows all */}
       {(activeTab === 'overview' || activeTab === 'charts') && chartData.map((cd) => (
-        <div key={cd.commodity} className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+        <div key={cd.commodity} className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
           <h3 className="text-lg font-semibold mb-3" style={{ color: getCommodityColor(cd.commodity) }}>
             {cd.commodity}
           </h3>
@@ -163,13 +163,13 @@ export function NetPositionDashboard({ onNavigate }: { onNavigate?: (id: string)
 
       {/* Day-over-day deltas — overview only */}
       {(activeTab === 'overview') && deltas.size > 0 && (
-        <div className="bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg p-4">
-          <h4 className="font-semibold text-amber-800 dark:text-amber-200 mb-2">Position Changes Since Last Upload</h4>
+        <div className="bg-amber-50 dark:bg-amber-950 border border-amber-500/20 dark:border-amber-500/20 rounded-lg p-4">
+          <h4 className="font-semibold text-[var(--warning)] dark:text-[var(--warning)] mb-2">Position Changes Since Last Upload</h4>
           <div className="space-y-1 text-sm">
             {[...deltas.entries()].map(([commodity, delta]) => (
               <div key={commodity} className="flex gap-2">
                 <span className="font-medium">{commodity}:</span>
-                <span className={Math.abs(delta) > THRESHOLDS.positionSwingBushels ? 'text-amber-700 dark:text-amber-300 font-semibold' : ''}>
+                <span className={Math.abs(delta) > THRESHOLDS.positionSwingBushels ? 'text-[var(--warning)] dark:text-amber-300 font-semibold' : ''}>
                   {delta > 0 ? '+' : ''}{formatBushelsShort(delta)} bu
                 </span>
                 {Math.abs(delta) > THRESHOLDS.positionSwingBushels && (
@@ -187,7 +187,7 @@ export function NetPositionDashboard({ onNavigate }: { onNavigate?: (id: string)
           <div className="flex items-center gap-3 mb-2">
             <div className="w-3 h-3 rounded-full" style={{ backgroundColor: getCommodityColor(summary.commodity) }} />
             <h3 className="text-lg font-semibold">{summary.commodity}</h3>
-            <span className="text-sm text-gray-500 dark:text-gray-400">
+            <span className="text-sm text-[var(--text-muted)]">
               Net: {formatBushelsShort(summary.totalNet)} bu
             </span>
           </div>
