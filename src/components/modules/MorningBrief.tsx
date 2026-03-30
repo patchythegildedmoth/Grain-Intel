@@ -7,6 +7,7 @@ import { useRiskProfile } from '../../hooks/useRiskProfile';
 import { useMarkToMarket } from '../../hooks/useMarkToMarket';
 import { usePriceLaterExposure } from '../../hooks/usePriceLaterExposure';
 import { useFreightEfficiency } from '../../hooks/useFreightEfficiency';
+import { useWeatherRisk } from '../../hooks/useWeatherRisk';
 import { useContractStore } from '../../store/useContractStore';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
 import { StatCard } from '../shared/StatCard';
@@ -27,6 +28,7 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
   const { totalBookPnl, totalOpenPnl } = useMarkToMarket();
   const { totalDailyCarry, summaries: priceLaterSummaries } = usePriceLaterExposure();
   const { summaryAlerts: freightAlerts, blendedFreightCost, costTrend } = useFreightEfficiency();
+  const { morningBriefCard, hasWeatherData, isStale, lastFetchedAt, alerts: weatherAlerts } = useWeatherRisk();
   const hasMarketData = useMarketDataStore((s) => s.lastUpdated !== null);
 
   // Net exposure delta for Morning Brief KPI
@@ -67,6 +69,9 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
   for (const a of freightAlerts.filter((a) => a.level === 'critical')) {
     criticalAlerts.push({ module: 'Freight', message: a.message });
   }
+  for (const a of weatherAlerts.filter((a) => a.level === 'critical' || a.level === 'warning')) {
+    criticalAlerts.push({ module: 'Weather', message: a.message });
+  }
 
   return (
     <div className="p-6 space-y-6 print:p-2 print:space-y-4">
@@ -93,6 +98,42 @@ export function MorningBrief({ onNavigate: _onNavigate }: { onNavigate?: (id: st
             ))}
           </div>
         </div>
+      )}
+
+      {/* Weather Risk Card */}
+      {hasWeatherData && (
+        <a href="#weather" className="block group">
+          <div className={`rounded-xl border p-4 transition-colors cursor-pointer group-hover:border-blue-300 dark:group-hover:border-blue-600 ${
+            morningBriefCard.severity === 'extreme' || morningBriefCard.severity === 'high'
+              ? 'border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-900/10'
+              : morningBriefCard.severity === 'moderate'
+                ? 'border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-900/10'
+                : 'border-[var(--border-default)] bg-[var(--bg-surface)]'
+          }`}>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">🌦️ Weather Risk</div>
+                <div className="mt-1 text-lg font-bold text-[var(--text-primary)]">{morningBriefCard.headline}</div>
+                <div className="mt-0.5 text-xs text-[var(--text-muted)]">
+                  {morningBriefCard.locationsMonitored} locations monitored · {morningBriefCard.activeAlerts} active risk{morningBriefCard.activeAlerts !== 1 ? 's' : ''}
+                  {isStale && lastFetchedAt && <span className="text-amber-600 dark:text-amber-400"> · Stale (as of {new Date(lastFetchedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})</span>}
+                </div>
+              </div>
+              <AlertBadge level={morningBriefCard.severity === 'extreme' ? 'critical' : morningBriefCard.severity === 'high' ? 'warning' : morningBriefCard.severity === 'moderate' ? 'warning' : 'ok'}>
+                {morningBriefCard.severity}
+              </AlertBadge>
+            </div>
+            {morningBriefCard.topRisks.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-2">
+                {morningBriefCard.topRisks.slice(0, 3).map((risk) => (
+                  <span key={risk.locationKey} className="text-xs px-2 py-0.5 rounded bg-[var(--bg-inset)] text-[var(--text-secondary)]">
+                    {risk.event} · {risk.locationName}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        </a>
       )}
 
       {/* Top-level KPIs — clickable, navigates to source module */}

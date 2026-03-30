@@ -1,4 +1,5 @@
 export interface HistoricalWeatherDay {
+  id: string;
   locationKey: string;
   date: string;
   lat: number;
@@ -10,6 +11,7 @@ export interface HistoricalWeatherDay {
 }
 
 export interface HistoricalPriceDay {
+  id: string;
   symbol: string;
   date: string;
   open: number;

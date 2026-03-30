@@ -391,3 +391,9 @@ Deploys automatically via GitHub Actions on push to `main`. The workflow builds 
 **Localhost** (`npm run dev`): Always up-to-date with current source. Vite hot-reloads on save.
 
 To deploy: commit changes, push to main. GitHub Actions handles the rest.
+
+## Module Roadmap
+See `docs/DASHBOARD_MODULES_PLAN.md` for the full feature plan and current status.
+- Check the status tracker table at session start
+- Work on the current 🟡 module or ask which to start next
+- Update the tracker status and Notes column when completing work
