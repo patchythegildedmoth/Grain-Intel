@@ -91,6 +91,10 @@ export function useHistoricalCorrelation() {
 
       let result: CorrelationResult | null = null;
 
+      // DEBUG — remove after diagnosis
+      console.log('[Historical] forecast:', forecast ? `✅ ${forecast.locationKey} (${forecast.daily.length} days)` : '❌ null');
+      console.log('[Historical] locations[0]:', locations[0]);
+
       if (forecast && locations.length > 0) {
         const loc = locations[0];
         const symbol = CONTINUOUS_SYMBOLS[commodity];
@@ -114,6 +118,8 @@ export function useHistoricalCorrelation() {
           const currentMinTempC = Math.min(...forecast.daily.map((d) => d.tempMinC));
 
           const today = new Date();
+          console.log('[Historical] weatherData records:', weatherData.length, '| priceData records:', priceData.length);
+          console.log('[Historical] currentPrecipMm:', currentPrecipMm, '| currentAvgTempC:', currentAvgTempC, '| currentMinTempC:', currentMinTempC);
           result = correlate({
             locationKey: loc.locationKey,
             weatherData,
@@ -125,6 +131,7 @@ export function useHistoricalCorrelation() {
             targetMonth: today.getMonth() + 1,
             targetDay: today.getDate(),
           });
+          console.log('[Historical] result:', result ? `analogCount=${result.analogCount}, confidence=${result.confidenceLevel}` : 'null');
         }
       }
 
