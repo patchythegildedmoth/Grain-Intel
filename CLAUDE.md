@@ -506,6 +506,21 @@ Deploys automatically via GitHub Actions on push to `main`. The workflow builds 
 
 To deploy: commit changes, push to main. GitHub Actions handles the rest.
 
+## Deploy Configuration (configured by /setup-deploy)
+- Platform: GitHub Pages
+- Production URL: https://patchythegildedmoth.github.io/Grain-Intel/
+- Deploy workflow: .github/workflows/deploy.yml (auto-deploy on push to main)
+- Deploy status command: gh run list --workflow=deploy.yml --limit=1
+- Merge method: merge (direct push to main)
+- Project type: web app (SPA)
+- Post-deploy health check: https://patchythegildedmoth.github.io/Grain-Intel/
+
+### Custom deploy hooks
+- Pre-merge: npm run build && npm run test
+- Deploy trigger: automatic on push to main
+- Deploy status: gh run list --workflow=deploy.yml --limit=1
+- Health check: curl -sf https://patchythegildedmoth.github.io/Grain-Intel/ -o /dev/null -w "%{http_code}"
+
 ## Module Roadmap
 See `DASHBOARD_MODULES_PLAN.md` (repo root) for the full 19-item feature plan and current status.
 
