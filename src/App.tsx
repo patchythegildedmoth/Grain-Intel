@@ -17,6 +17,7 @@ import { PriceLaterExposure } from './components/modules/PriceLaterExposure';
 import { MarkToMarket } from './components/modules/MarkToMarket';
 import { FreightEfficiencyAnalysis } from './components/modules/FreightEfficiencyAnalysis';
 import { EntityLocationMap } from './components/modules/EntityLocationMap';
+import { WeatherDashboard } from './components/modules/WeatherDashboard';
 
 function getHashModule(): string {
   const hash = window.location.hash.replace('#', '');
@@ -50,12 +51,12 @@ export default function App() {
   // Show guided welcome screen if no data
   if (!isLoaded) {
     return (
-      <div className="min-h-screen bg-gray-100 dark:bg-gray-950">
+      <div className="min-h-screen bg-[var(--bg-base)]">
         <div className="text-center pt-12 pb-4">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
-            Ag Source <span className="text-blue-600 dark:text-blue-400">Grain Intelligence</span>
+          <h1 className="font-display text-3xl font-extrabold text-[var(--text-primary)] tracking-[-0.02em]">
+            Grain <span className="text-[var(--accent)]">Intel</span>
           </h1>
-          <p className="mt-2 text-gray-500 dark:text-gray-400">
+          <p className="mt-2 text-[var(--text-muted)]">
             Daily trading intelligence from your iRely contract data
           </p>
         </div>
@@ -64,7 +65,7 @@ export default function App() {
 
         {/* Ghost preview — shows what the Morning Brief looks like once data loads */}
         <div className="max-w-4xl mx-auto px-8 pb-12">
-          <p className="text-center text-xs font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide mb-4">
+          <p className="text-center text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.06em] mb-4">
             Preview — Morning Brief
           </p>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 opacity-40 pointer-events-none select-none">
@@ -76,19 +77,19 @@ export default function App() {
             ].map((card) => (
               <div
                 key={card.label}
-                className="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4"
+                className="rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] shadow-[var(--shadow-sm)] p-4"
               >
-                <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-[0.06em]">
                   {card.icon} {card.label}
                 </div>
-                <div className="mt-2 text-2xl font-bold text-gray-300 dark:text-gray-600">
+                <div className="mt-2 text-2xl font-semibold font-data text-[var(--border-default)]">
                   —
                 </div>
-                <div className="mt-1 h-3 w-16 bg-gray-200 dark:bg-gray-700 rounded-full" />
+                <div className="mt-1 h-3 w-16 bg-[var(--bg-inset)] rounded-full" />
               </div>
             ))}
           </div>
-          <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-3">
+          <p className="text-center text-xs text-[var(--text-muted)] mt-3">
             Upload your .xlsx export to populate these metrics
           </p>
         </div>
@@ -122,6 +123,8 @@ export default function App() {
         return <MarkToMarket onNavigate={handleModuleChange} />;
       case 'freight-efficiency':
         return <FreightEfficiencyAnalysis />;
+      case 'weather':
+        return <WeatherDashboard onNavigate={handleModuleChange} />;
       case 'entity-map':
         return <EntityLocationMap onNavigate={handleModuleChange} />;
       case 'data-health':
