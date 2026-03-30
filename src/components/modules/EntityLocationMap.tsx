@@ -10,6 +10,7 @@ import { geocodeAddress, geocodeBatch, parseEntityCSV } from '../../utils/nomina
 import { StatCard } from '../shared/StatCard';
 import { DataTable } from '../shared/DataTable';
 import { Breadcrumb } from '../shared/Breadcrumb';
+import { SegmentedControl } from '../shared/SegmentedControl';
 import { formatBushelsShort, formatCurrency, formatPercent } from '../../utils/formatters';
 import { getCommodityColor } from '../../utils/commodityColors';
 import { FREIGHT_TIERS } from '../../utils/freightTiers';
@@ -24,6 +25,52 @@ L.Icon.Default.mergeOptions({ iconUrl, iconRetinaUrl, shadowUrl });
 const LIGHT_TILES = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
 const DARK_TILES = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
 const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>';
+
+// ─── Color modes ────────────────────────────────────────────────────────────
+
+type ColorMode = 'commodity' | 'direction' | 'freight';
+
+const COLOR_MODE_SEGMENTS = [
+  { key: 'commodity', label: 'Commodity' },
+  { key: 'direction', label: 'Direction' },
+  { key: 'freight', label: 'Freight' },
+];
+
+// Semantic colors from design system tokens
+const DIRECTION_COLORS = {
+  supplier: '#16A34A', // --positive (light)
+  buyer: '#DC2626',    // --negative (light)
+  both: '#2563EB',     // --accent (light)
+  none: '#94A3B8',     // --text-muted (light)
+} as const;
+
+const DIRECTION_COLORS_DARK = {
+  supplier: '#4ADE80', // --positive (dark)
+  buyer: '#F87171',    // --negative (dark)
+  both: '#3B82F6',     // --accent (dark)
+  none: '#475569',     // --text-muted (dark)
+} as const;
+
+/** Map freight cost to a green → amber → red gradient */
+function freightCostToColor(cost: number | null, isDark: boolean): string {
+  if (cost === null || cost === 0) return isDark ? '#4ADE80' : '#16A34A'; // green = no freight
+  if (cost <= 0.35) return isDark ? '#4ADE80' : '#16A34A'; // A-C: green
+  if (cost <= 0.65) return isDark ? '#FBBF24' : '#D97706'; // D-F: amber/warning
+  return isDark ? '#F87171' : '#DC2626'; // G+: red
+}
+
+function getMarkerColor(entity: MapEntity, mode: ColorMode, isDark: boolean): string {
+  switch (mode) {
+    case 'commodity':
+      return getCommodityColor(entity.primaryCommodity);
+    case 'direction': {
+      const colors = isDark ? DIRECTION_COLORS_DARK : DIRECTION_COLORS;
+      return colors[entity.netDirection];
+    }
+    case 'freight':
+      return freightCostToColor(entity.avgFreightCostPerBu, isDark);
+  }
+}
 
 // ─── Table columns ──────────────────────────────────────────────────────────
 
@@ -124,6 +171,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
   const { setEntityLocation, setElevatorLocation, removeEntityLocation } = useEntityLocationStore();
 
   // State
+  const [colorMode, setColorMode] = useState<ColorMode>('commodity');
   const [showManager, setShowManager] = useState(false);
   const [activeCommodities, setActiveCommodities] = useState<Set<string>>(new Set(commodities));
   const [searchTerm, setSearchTerm] = useState('');
@@ -146,7 +194,8 @@ export function EntityLocationMap({ onNavigate }: Props) {
   // Filtered entities
   const filteredEntities = useMemo(() => {
     let result = mapEntities;
-    if (activeCommodities.size < commodities.length) {
+    // Commodity filters only apply in commodity mode
+    if (colorMode === 'commodity' && activeCommodities.size < commodities.length) {
       result = result.filter((e) => activeCommodities.has(e.primaryCommodity));
     }
     if (searchTerm) {
@@ -154,7 +203,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
       result = result.filter((e) => e.entity.toLowerCase().includes(term));
     }
     return result;
-  }, [mapEntities, activeCommodities, commodities.length, searchTerm]);
+  }, [mapEntities, activeCommodities, commodities.length, searchTerm, colorMode]);
 
   // Marker sizing
   const maxBu = useMemo(() => Math.max(1, ...mapEntities.map((e) => e.totalBushels)), [mapEntities]);
@@ -210,8 +259,16 @@ export function EntityLocationMap({ onNavigate }: Props) {
 
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-3 no-print">
-        {/* Commodity filters */}
-        {commodities.map((c) => (
+        {/* Color mode selector */}
+        <SegmentedControl
+          segments={COLOR_MODE_SEGMENTS}
+          activeKey={colorMode}
+          onChange={(key) => setColorMode(key as ColorMode)}
+          size="sm"
+        />
+
+        {/* Commodity filters — only in commodity mode */}
+        {colorMode === 'commodity' && commodities.map((c) => (
           <button
             key={c}
             onClick={() => toggleCommodity(c)}
@@ -226,6 +283,24 @@ export function EntityLocationMap({ onNavigate }: Props) {
           </button>
         ))}
 
+        {/* Direction legend */}
+        {colorMode === 'direction' && (
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: isDark ? DIRECTION_COLORS_DARK.supplier : DIRECTION_COLORS.supplier }} /> Supplier</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: isDark ? DIRECTION_COLORS_DARK.buyer : DIRECTION_COLORS.buyer }} /> Buyer</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: isDark ? DIRECTION_COLORS_DARK.both : DIRECTION_COLORS.both }} /> Both</span>
+          </div>
+        )}
+
+        {/* Freight legend */}
+        {colorMode === 'freight' && (
+          <div className="flex items-center gap-3 text-xs">
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: isDark ? '#4ADE80' : '#16A34A' }} /> A-C ($0-0.35)</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: isDark ? '#FBBF24' : '#D97706' }} /> D-F ($0.45-0.65)</span>
+            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: isDark ? '#F87171' : '#DC2626' }} /> G+ ($0.75+)</span>
+          </div>
+        )}
+
         <div className="flex-1" />
 
         {/* Show all toggle */}
@@ -233,7 +308,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
           onClick={() => setShowAllGeocoded(!showAllGeocoded)}
           className={`px-2.5 py-1 text-xs font-medium rounded-full border transition-colors ${
             showAllGeocoded
-              ? 'bg-blue-600 text-white border-transparent'
+              ? 'bg-[var(--accent)] text-white border-transparent'
               : 'text-[var(--text-muted)] border-[var(--border-default)] bg-transparent hover:bg-[var(--bg-surface)]'
           }`}
         >
@@ -252,7 +327,7 @@ export function EntityLocationMap({ onNavigate }: Props) {
         {/* Manage Locations button */}
         <button
           onClick={() => setShowManager(!showManager)}
-          className="px-3 py-1.5 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="px-3 py-1.5 text-sm font-medium bg-[var(--accent)] text-white rounded-lg hover:bg-[var(--accent-hover)] transition-colors"
         >
           {showManager ? 'Hide Manager' : 'Manage Locations'}
         </button>
@@ -312,14 +387,16 @@ export function EntityLocationMap({ onNavigate }: Props) {
             )}
 
             {/* Entity markers */}
-            {filteredEntities.map((entity) => (
+            {filteredEntities.map((entity) => {
+              const markerColor = getMarkerColor(entity, colorMode, isDark);
+              return (
               <CircleMarker
                 key={entity.entity}
                 center={[entity.lat, entity.lon]}
                 radius={getRadius(entity.totalBushels)}
                 pathOptions={{
-                  color: getCommodityColor(entity.primaryCommodity),
-                  fillColor: getCommodityColor(entity.primaryCommodity),
+                  color: markerColor,
+                  fillColor: markerColor,
                   fillOpacity: 0.7,
                   weight: 2,
                 }}
@@ -374,7 +451,8 @@ export function EntityLocationMap({ onNavigate }: Props) {
                   </div>
                 </Popup>
               </CircleMarker>
-            ))}
+              );
+            })}
           </MapContainer>
         )}
       </div>
