@@ -53,10 +53,10 @@ export default function App() {
     return (
       <div className="min-h-screen bg-[var(--bg-base)]">
         <div className="text-center pt-12 pb-4">
-          <h1 className="font-display text-3xl font-extrabold text-[var(--text-primary)] tracking-[-0.02em]">
+          <h1 className="font-display text-3xl font-extrabold text-[var(--text-primary)] tracking-[-0.02em] text-balance">
             Grain <span className="text-[var(--accent)]">Intel</span>
           </h1>
-          <p className="mt-2 text-[var(--text-muted)]">
+          <p className="mt-2 text-[var(--text-muted)] text-balance">
             Daily trading intelligence from your iRely contract data
           </p>
         </div>

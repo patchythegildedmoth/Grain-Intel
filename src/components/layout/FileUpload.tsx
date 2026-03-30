@@ -46,7 +46,7 @@ export function FileUpload() {
           </svg>
         </div>
 
-        <h2 className="text-xl font-semibold text-[var(--text-secondary)] mb-2">
+        <h2 className="text-xl font-semibold text-[var(--text-secondary)] mb-2 text-balance">
           Upload iRely Contract Export
         </h2>
         <p className="text-sm text-[var(--text-muted)] mb-6">
