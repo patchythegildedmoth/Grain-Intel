@@ -8,17 +8,17 @@ interface StatCardProps {
 
 export function StatCard({ label, value, delta, deltaDirection, colorClass }: StatCardProps) {
   const deltaColor = deltaDirection === 'up'
-    ? 'text-green-600 dark:text-green-400'
+    ? 'text-[var(--positive)]'
     : deltaDirection === 'down'
-    ? 'text-red-600 dark:text-red-400'
-    : 'text-gray-500 dark:text-gray-400';
+    ? 'text-[var(--negative)]'
+    : 'text-[var(--text-muted)]';
 
   return (
-    <div className={`rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 ${colorClass ?? ''}`}>
-      <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+    <div className={`rounded-lg border border-[var(--border-default)] bg-[var(--bg-surface)] p-4 ${colorClass ?? ''}`}>
+      <p className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wide">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">
+      <p className="mt-1 text-2xl font-bold text-[var(--text-primary)]">
         {value}
       </p>
       {delta && (
@@ -31,3 +31,4 @@ export function StatCard({ label, value, delta, deltaDirection, colorClass }: St
     </div>
   );
 }
+// test marker
