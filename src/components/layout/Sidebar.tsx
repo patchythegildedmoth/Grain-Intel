@@ -13,6 +13,7 @@ export const NAV_ITEMS = [
   { id: 'price-later', label: '7. Price-Later', icon: '⏳', group: 'market' },
   { id: 'mark-to-market', label: '8. Mark-to-Market', icon: '💰', group: 'market' },
   { id: 'freight-efficiency', label: '9. Freight Efficiency', icon: '🚚', group: 'market' },
+  { id: 'weather', label: 'Weather', icon: '🌦️', group: 'market' },
   { id: 'entity-map', label: 'Entity Map', icon: '📍', group: 'tools' },
   { id: 'scenario', label: 'What-If Scenario', icon: '🔮', group: 'tools' },
   { id: 'data-health', label: 'Data Health', icon: '🔍', group: 'tools' },
@@ -43,7 +44,7 @@ export function Sidebar({ activeModule, onModuleChange }: SidebarProps) {
         return (
           <div key={item.id}>
             {showDivider && (
-              <div className="my-2 border-t border-gray-200 dark:border-gray-700" />
+              <div className="my-2 border-t border-[var(--border-default)]" />
             )}
             <button
               onClick={() => { onModuleChange(item.id); setMobileOpen(false); }}
@@ -51,8 +52,8 @@ export function Sidebar({ activeModule, onModuleChange }: SidebarProps) {
               className={`w-full text-left rounded-lg text-sm font-medium transition-colors flex items-center relative
                 ${collapsed ? 'px-2 py-2.5 justify-center' : 'px-3 py-2.5 gap-2.5'}
                 ${activeModule === item.id
-                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200'
-                  : 'text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800'
+                  ? 'bg-blue-600/10 text-[var(--accent)]'
+                  : 'text-[var(--text-secondary)] hover:bg-[var(--bg-surface-raised)]'
                 }`}
             >
               <span className="text-base relative">
@@ -73,8 +74,8 @@ export function Sidebar({ activeModule, onModuleChange }: SidebarProps) {
                     return (
                       <span className={`text-[10px] font-bold rounded-full px-1.5 py-0.5 leading-none ${
                         hasCritical
-                          ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'
-                          : 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400'
+                          ? 'bg-red-600/10 text-[var(--negative)] dark:bg-red-600/10/40 dark:text-red-400'
+                          : 'bg-amber-500/10 text-[var(--warning)] dark:bg-amber-500/10/40 dark:text-amber-400'
                       }`}>
                         {alerts.length}
                       </span>
@@ -127,19 +128,19 @@ export function Sidebar({ activeModule, onModuleChange }: SidebarProps) {
 
       {/* Mobile slide-out drawer — below md */}
       <aside
-        className={`md:hidden fixed left-0 top-14 bottom-0 z-40 w-56 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto transition-transform no-print
+        className={`md:hidden fixed left-0 top-14 bottom-0 z-40 w-56 bg-[var(--bg-surface)] border-r border-[var(--border-default)] overflow-y-auto transition-transform no-print
           ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {renderNav(false)}
       </aside>
 
       {/* Tablet icon rail — md to lg */}
-      <aside className="hidden md:block lg:hidden w-14 shrink-0 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto no-print">
+      <aside className="hidden md:block lg:hidden w-14 shrink-0 bg-[var(--bg-surface)] border-r border-[var(--border-default)] overflow-y-auto no-print">
         {renderNav(true)}
       </aside>
 
       {/* Desktop full sidebar — lg and up */}
-      <aside className="hidden lg:block w-56 shrink-0 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 overflow-y-auto no-print">
+      <aside className="hidden lg:block w-56 shrink-0 bg-[var(--bg-surface)] border-r border-[var(--border-default)] overflow-y-auto no-print">
         {renderNav(false)}
       </aside>
     </>
