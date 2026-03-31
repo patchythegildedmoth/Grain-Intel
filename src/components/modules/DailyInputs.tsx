@@ -439,9 +439,10 @@ export function DailyInputs() {
           USDA NASS Key:
         </div>
         <input
-          type="text"
+          type="password"
           value={nassApiKeyInput}
           onChange={(e) => { setNassApiKeyInput(e.target.value); setNassApiKeySaved(false); }}
+          autoComplete="off"
           className="flex-1 px-2 py-1 text-xs border border-[var(--border-default)] rounded bg-[var(--bg-surface)] dark:bg-gray-700 dark:text-gray-200 font-mono"
           placeholder="Register free at quickstats.nass.usda.gov/api/"
         />
