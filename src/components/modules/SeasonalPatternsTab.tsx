@@ -14,7 +14,7 @@ import {
 import { SegmentedControl } from '../shared/SegmentedControl';
 import { getCachedPrices, fetchHistoricalPrices, CONTINUOUS_SYMBOLS } from '../../utils/historicalYahoo';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
-import { getISOWeek, parseLocalDate } from '../../utils/isoWeek';
+import { getISOWeek, parseLocalDate, filterRollDays } from '../../utils/isoWeek';
 import type { HistoricalPriceDay } from '../../types/historicalWeather';
 
 function getCurrentISOWeek(): number {
@@ -56,21 +56,8 @@ function buildSeasonalData(priceData: HistoricalPriceDay[]): SeasonalPoint[] {
   const currentYear = now.getFullYear();
   const fiveYearsAgo = currentYear - 5;
 
-  // Roll-day filter: drop records where day-over-day change > ±15%
-  // Compare against last ACCEPTED value (not sorted[i-1]) to avoid comparing
-  // against a previously-skipped roll-day record.
-  const sorted = [...priceData].sort((a, b) => a.date.localeCompare(b.date));
-  const filtered: HistoricalPriceDay[] = [];
-  for (let i = 0; i < sorted.length; i++) {
-    if (filtered.length === 0) { filtered.push(sorted[i]); continue; }
-    const prev = filtered[filtered.length - 1].close;
-    const curr = sorted[i].close;
-    if (prev > 0) {
-      const change = Math.abs((curr - prev) / prev);
-      if (change > 0.15) continue; // roll-day discontinuity — skip
-    }
-    filtered.push(sorted[i]);
-  }
+  // Roll-day filter (shared utility — compares against last accepted value)
+  const filtered = filterRollDays(priceData);
 
   // Group by ISO week
   // Historic years: fiveYearsAgo to currentYear-1 (for seasonal mean/SD)
