@@ -67,11 +67,11 @@ export default function App() {
   }, [isLoaded, activeModule]);
 
   const handleModuleChange = useCallback((id: string) => {
-    // #weather backward compat
+    // #weather backward compat — rewrite to canonical hash so bookmarks work
     if (id === 'weather') {
       setActiveModule('market-factors');
       setActiveMarketFactorsTab('weather');
-      window.location.hash = 'weather';
+      window.location.hash = 'market-factors';
       return;
     }
     setActiveModule(id);
