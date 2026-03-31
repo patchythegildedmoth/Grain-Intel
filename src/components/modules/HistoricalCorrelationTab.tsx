@@ -232,6 +232,21 @@ export default function HistoricalCorrelationTab() {
                 <h4 className="text-sm font-bold text-[var(--text-primary)]">
                   Historical Analogs — {selectedCommodity}
                 </h4>
+                <p className="mt-1 text-xs text-[var(--text-muted)]">
+                  Matching against current conditions:{' '}
+                  <span className="font-medium text-[var(--text-secondary)]">
+                    precip {result.currentCondition.precipZScore >= 0 ? '+' : ''}{result.currentCondition.precipZScore.toFixed(2)} SD ({result.currentCondition.precipMm.toFixed(1)} mm)
+                  </span>
+                  {' · '}
+                  <span className="font-medium text-[var(--text-secondary)]">
+                    temp {result.currentCondition.tempZScore >= 0 ? '+' : ''}{result.currentCondition.tempZScore.toFixed(2)} SD ({result.currentCondition.avgTempC.toFixed(1)}°C)
+                  </span>
+                  {' · '}
+                  <span className="font-medium text-[var(--text-secondary)]">
+                    {result.currentCondition.eventType.replace('-', ' ')}
+                  </span>
+                  . SD columns show how far each analog year deviated from its historical norm.
+                </p>
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -240,7 +255,9 @@ export default function HistoricalCorrelationTab() {
                       <th className="px-4 py-2 text-left font-medium text-[var(--text-secondary)]">Year</th>
                       <th className="px-4 py-2 text-left font-medium text-[var(--text-secondary)]">Event</th>
                       <th className="px-4 py-2 text-right font-medium text-[var(--text-secondary)]">Precip (mm)</th>
+                      <th className="px-4 py-2 text-right font-medium text-[var(--text-secondary)]">Precip SD</th>
                       <th className="px-4 py-2 text-right font-medium text-[var(--text-secondary)]">Temp (°C)</th>
+                      <th className="px-4 py-2 text-right font-medium text-[var(--text-secondary)]">Temp SD</th>
                       <th className="px-4 py-2 text-right font-medium text-[var(--text-secondary)]">Similarity</th>
                       <th className="px-4 py-2 text-right font-medium text-[var(--text-secondary)]">7d Move</th>
                       <th className="px-4 py-2 text-right font-medium text-[var(--text-secondary)]">14d Move</th>
@@ -248,7 +265,7 @@ export default function HistoricalCorrelationTab() {
                     </tr>
                   </thead>
                   <tbody>
-                    {result.analogs.map((pr) => (
+                    {[...result.analogs].sort((a, b) => a.analog.year - b.analog.year).map((pr) => (
                       <tr key={`${pr.analog.year}-${pr.analog.startDate}`} className="border-b border-[var(--border-subtle)] hover:bg-[var(--bg-inset)]">
                         <td className="px-4 py-2 font-medium text-[var(--text-primary)]">{pr.analog.year}</td>
                         <td className="px-4 py-2">
@@ -263,7 +280,13 @@ export default function HistoricalCorrelationTab() {
                           </span>
                         </td>
                         <td className="px-4 py-2 text-right tabular-nums text-[var(--text-secondary)]">{pr.analog.precipMm.toFixed(1)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums text-[var(--text-secondary)]">
+                          {pr.analog.precipZScore >= 0 ? '+' : ''}{pr.analog.precipZScore.toFixed(2)}
+                        </td>
                         <td className="px-4 py-2 text-right tabular-nums text-[var(--text-secondary)]">{pr.analog.avgTempC.toFixed(1)}</td>
+                        <td className="px-4 py-2 text-right tabular-nums text-[var(--text-secondary)]">
+                          {pr.analog.tempZScore >= 0 ? '+' : ''}{pr.analog.tempZScore.toFixed(2)}
+                        </td>
                         <td className="px-4 py-2 text-right tabular-nums text-[var(--text-secondary)]">{pr.analog.similarity.toFixed(2)}</td>
                         <td className={`px-4 py-2 text-right tabular-nums font-medium ${pr.priceChange7d >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {pr.priceChange7d >= 0 ? '+' : ''}{formatCurrency(pr.priceChange7d)}
