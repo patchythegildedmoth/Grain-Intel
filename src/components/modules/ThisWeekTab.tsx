@@ -15,16 +15,8 @@ import { useWeatherStore } from '../../store/useWeatherStore';
 import { getCachedPrices, fetchHistoricalPrices, CONTINUOUS_SYMBOLS } from '../../utils/historicalYahoo';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
 import { getCachedCropProgressAny } from '../../utils/usdaNass';
+import { getISOWeek, parseLocalDate } from '../../utils/isoWeek';
 import type { MarketFactorsTab } from '../layout/SectionNav';
-
-// ─── ISO week utility ─────────────────────────────────────────────────────────
-function getISOWeek(date: Date): number {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-  const week1 = new Date(d.getFullYear(), 0, 4);
-  return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
-}
 
 // ─── Compute seasonal context for current week ────────────────────────────────
 interface SeasonalContext {
@@ -63,7 +55,7 @@ async function getSeasonalContext(symbol: string): Promise<SeasonalContext> {
   // Current year most recent close at current ISO week
   const currentYearDays = filtered.filter((d) => {
     const year = parseInt(d.date.slice(0, 4));
-    const week = getISOWeek(new Date(d.date));
+    const week = getISOWeek(parseLocalDate(d.date));
     return year === currentYear && week === currentWeek;
   });
   const currentClose = currentYearDays.length > 0 ? currentYearDays[currentYearDays.length - 1].close : null;
@@ -72,7 +64,7 @@ async function getSeasonalContext(symbol: string): Promise<SeasonalContext> {
   // 5-year mean for the same week
   const historicForWeek = filtered.filter((d) => {
     const year = parseInt(d.date.slice(0, 4));
-    const week = getISOWeek(new Date(d.date));
+    const week = getISOWeek(parseLocalDate(d.date));
     return year >= currentYear - 5 && year < currentYear && week === currentWeek;
   });
 
@@ -152,7 +144,7 @@ async function getCropSnapshot(year: number): Promise<CropSnapshot> {
   // National records, most recent week at or before now
   const national = (recs: typeof records) =>
     recs
-      .filter((r) => r.stateFipsCode === null && getISOWeek(new Date(r.referenceDate)) <= currentWeek)
+      .filter((r) => r.stateFipsCode === null && getISOWeek(parseLocalDate(r.referenceDate)) <= currentWeek)
       .sort((a, b) => b.referenceDate.localeCompare(a.referenceDate));
 
   const curNational = national(records);
@@ -170,14 +162,14 @@ async function getCropSnapshot(year: number): Promise<CropSnapshot> {
         r.stateFipsCode === null &&
         r.unitDesc === 'PCT GOOD' &&
         r.year === yr &&
-        getISOWeek(new Date(r.referenceDate)) === targetWeek,
+        getISOWeek(parseLocalDate(r.referenceDate)) === targetWeek,
     );
     const excellent = recs.find(
       (r) =>
         r.stateFipsCode === null &&
         r.unitDesc === 'PCT EXCELLENT' &&
         r.year === yr &&
-        getISOWeek(new Date(r.referenceDate)) === targetWeek,
+        getISOWeek(parseLocalDate(r.referenceDate)) === targetWeek,
     );
     if (good == null && excellent == null) return null;
     return (good?.value ?? 0) + (excellent?.value ?? 0);
@@ -192,7 +184,6 @@ async function getCropSnapshot(year: number): Promise<CropSnapshot> {
 // ─── Main Component ───────────────────────────────────────────────────────────
 interface ThisWeekTabProps {
   onTabChange: (tab: MarketFactorsTab) => void;
-  onNavigate: (moduleId: string) => void;
 }
 
 export function ThisWeekTab({ onTabChange }: ThisWeekTabProps) {
@@ -221,22 +212,30 @@ export function ThisWeekTab({ onTabChange }: ThisWeekTabProps) {
     return totals.reduce((s, v) => s + v, 0) / totals.length;
   })();
 
-  // Load seasonal context on mount
+  // Load seasonal context on mount — cancellation guard prevents stale setState
   useEffect(() => {
+    let cancelled = false;
     setSeasonalLoading(true);
     getSeasonalContext(cornSymbol).then((ctx) => {
-      setSeasonal(ctx);
-      setSeasonalLoading(false);
+      if (!cancelled) {
+        setSeasonal(ctx);
+        setSeasonalLoading(false);
+      }
     });
+    return () => { cancelled = true; };
   }, [cornSymbol]);
 
-  // Load crop progress snapshot on mount
+  // Load crop progress snapshot on mount — cancellation guard prevents stale setState
   useEffect(() => {
+    let cancelled = false;
     setCropLoading(true);
     getCropSnapshot(currentYear).then((snap) => {
-      setCropSnapshot(snap);
-      setCropLoading(false);
+      if (!cancelled) {
+        setCropSnapshot(snap);
+        setCropLoading(false);
+      }
     });
+    return () => { cancelled = true; };
   }, [currentYear]);
 
   const handleLoadSeasonalData = async () => {

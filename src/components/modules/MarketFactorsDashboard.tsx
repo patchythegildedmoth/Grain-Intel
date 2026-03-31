@@ -43,7 +43,7 @@ export function MarketFactorsDashboard({ activeTab, onTabChange, onNavigate }: M
     <div className="flex flex-col h-full">
       {activeTab === 'this-week' && (
         <Suspense fallback={<TabLoadingSpinner />}>
-          <ThisWeekTab onTabChange={onTabChange} onNavigate={onNavigate} />
+          <ThisWeekTab onTabChange={onTabChange} />
         </Suspense>
       )}
 

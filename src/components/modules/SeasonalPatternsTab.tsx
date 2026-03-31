@@ -14,16 +14,8 @@ import {
 import { SegmentedControl } from '../shared/SegmentedControl';
 import { getCachedPrices, fetchHistoricalPrices, CONTINUOUS_SYMBOLS } from '../../utils/historicalYahoo';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
+import { getISOWeek, parseLocalDate } from '../../utils/isoWeek';
 import type { HistoricalPriceDay } from '../../types/historicalWeather';
-
-// ─── ISO week utility (inline — date-fns is NOT in package.json) ─────────────
-function getISOWeek(date: Date): number {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-  const week1 = new Date(d.getFullYear(), 0, 4);
-  return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
-}
 
 function getCurrentISOWeek(): number {
   return getISOWeek(new Date());
@@ -64,13 +56,14 @@ function buildSeasonalData(priceData: HistoricalPriceDay[]): SeasonalPoint[] {
   const currentYear = now.getFullYear();
   const fiveYearsAgo = currentYear - 5;
 
-  // Roll-day filter: drop records where week-over-week change > ±15%
-  // Sort by date first
+  // Roll-day filter: drop records where day-over-day change > ±15%
+  // Compare against last ACCEPTED value (not sorted[i-1]) to avoid comparing
+  // against a previously-skipped roll-day record.
   const sorted = [...priceData].sort((a, b) => a.date.localeCompare(b.date));
   const filtered: HistoricalPriceDay[] = [];
   for (let i = 0; i < sorted.length; i++) {
-    if (i === 0) { filtered.push(sorted[i]); continue; }
-    const prev = sorted[i - 1].close;
+    if (filtered.length === 0) { filtered.push(sorted[i]); continue; }
+    const prev = filtered[filtered.length - 1].close;
     const curr = sorted[i].close;
     if (prev > 0) {
       const change = Math.abs((curr - prev) / prev);
@@ -87,7 +80,7 @@ function buildSeasonalData(priceData: HistoricalPriceDay[]): SeasonalPoint[] {
 
   for (const day of filtered) {
     const year = parseInt(day.date.slice(0, 4));
-    const week = getISOWeek(new Date(day.date));
+    const week = getISOWeek(parseLocalDate(day.date));
     if (week < 1 || week > 52) continue;
 
     if (year >= fiveYearsAgo && year < currentYear) {
