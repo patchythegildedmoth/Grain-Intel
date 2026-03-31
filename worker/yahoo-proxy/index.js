@@ -7,9 +7,10 @@
  *    GET https://<worker>.workers.dev/?symbol=ZC=F&period1=...&period2=...&interval=1d
  *
  *  - /usda-nass: USDA NASS QuickStats API proxy with key injection
- *    GET https://<worker>.workers.dev/usda-nass?nassApiKey=<key>&commodity_desc=CORN&...
- *    The worker strips nassApiKey from the forwarded request and injects it as &key=
- *    into the upstream NASS URL. Returns response verbatim + CORS headers.
+ *    GET https://<worker>.workers.dev/usda-nass?commodity_desc=CORN&...
+ *    The NASS API key is passed via the X-NASS-Api-Key request header (NOT a query param)
+ *    so it never appears in Cloudflare request logs.
+ *    Only accepts requests from allowed origins (prod + localhost dev).
  *
  * Deploy: cd worker/yahoo-proxy && npx wrangler deploy
  */
@@ -20,25 +21,52 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+// Origins allowed to call the NASS route (keeps the free API key from being abused
+// by third parties who discover the worker URL).
+const NASS_ALLOWED_ORIGINS = new Set([
+  'https://patchythegildedmoth.github.io',
+  'http://localhost:5173',
+  'http://localhost:4173', // vite preview
+  'http://localhost:3000',
+]);
+
+/** CORS headers for NASS route — echoes back the specific allowed origin. */
+function nassCorHeaders(origin) {
+  const allowed = NASS_ALLOWED_ORIGINS.has(origin) ? origin : null;
+  return {
+    'Access-Control-Allow-Origin': allowed ?? '',
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, X-NASS-Api-Key',
+    'Vary': 'Origin',
+  };
+}
+
 // ─── USDA NASS handler ────────────────────────────────────────────────────────
 
 async function handleNass(request) {
-  const url = new URL(request.url);
+  const origin = request.headers.get('Origin') ?? '';
+  const corsH = nassCorHeaders(origin);
 
-  // Extract and remove the API key from client-facing params
-  const nassApiKey = url.searchParams.get('nassApiKey');
-  if (!nassApiKey) {
-    return new Response(JSON.stringify({ error: 'Missing nassApiKey parameter' }), {
-      status: 400,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  // Enforce origin allowlist
+  if (!NASS_ALLOWED_ORIGINS.has(origin)) {
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json', ...corsH },
     });
   }
 
-  // Build upstream params — everything except nassApiKey
-  const upstreamParams = new URLSearchParams();
-  for (const [k, v] of url.searchParams.entries()) {
-    if (k !== 'nassApiKey') upstreamParams.set(k, v);
+  // Read API key from header — never from URL params (avoids Cloudflare log exposure)
+  const nassApiKey = request.headers.get('X-NASS-Api-Key');
+  if (!nassApiKey) {
+    return new Response(JSON.stringify({ error: 'Missing X-NASS-Api-Key header' }), {
+      status: 400,
+      headers: { 'Content-Type': 'application/json', ...corsH },
+    });
   }
+
+  // Forward all query params to NASS (nassApiKey was never in the URL)
+  const url = new URL(request.url);
+  const upstreamParams = new URLSearchParams(url.searchParams);
 
   // NASS always requires source_desc + sector_desc for QuickStats
   if (!upstreamParams.has('source_desc')) upstreamParams.set('source_desc', 'SURVEY');
@@ -55,12 +83,12 @@ async function handleNass(request) {
     const body = await resp.text();
     return new Response(body, {
       status: resp.status,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...corsH },
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: 'NASS upstream fetch failed', detail: err.message }), {
       status: 502,
-      headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+      headers: { 'Content-Type': 'application/json', ...corsH },
     });
   }
 }
@@ -112,13 +140,15 @@ async function handleYahoo(request) {
 
 export default {
   async fetch(request) {
-    // Handle CORS preflight
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { headers: CORS_HEADERS });
-    }
-
     const url = new URL(request.url);
     const path = url.pathname;
+    const origin = request.headers.get('Origin') ?? '';
+
+    // Handle CORS preflight
+    if (request.method === 'OPTIONS') {
+      const corsH = path === '/usda-nass' ? nassCorHeaders(origin) : CORS_HEADERS;
+      return new Response(null, { headers: corsH });
+    }
 
     if (path === '/usda-nass') {
       return handleNass(request);
