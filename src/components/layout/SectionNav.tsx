@@ -5,7 +5,7 @@
  * For Market Factors: shows the 4 internal hub tabs instead of module links.
  */
 
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import { NAV_ITEMS } from './Sidebar';
 import { useGlobalAlerts } from '../../hooks/useGlobalAlerts';
 import type { ModuleId } from './Sidebar';
@@ -46,8 +46,10 @@ export function SectionNav({
   const { byModule } = useGlobalAlerts();
   const visitedRef = useRef<Set<string>>(new Set(['morning-brief']));
 
-  // Track visited modules
-  if (activeModule) visitedRef.current.add(activeModule);
+  // Track visited modules in useEffect (not during render — avoids React 19 concurrent mode issues)
+  useEffect(() => {
+    if (activeModule) visitedRef.current.add(activeModule);
+  }, [activeModule]);
 
   // Market Factors: render internal hub tabs
   if (activeGroup === 'market-factors') {
