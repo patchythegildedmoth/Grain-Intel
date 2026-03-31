@@ -12,11 +12,15 @@ import { useState, useEffect, useCallback } from 'react';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
 import {
   fetchCropProgress,
+  fetchCropProgressOneMetric,
+  updateCachePartialStatus,
   getCachedCropProgressAny,
+  getCropProgressCacheMeta,
   CROP_PROGRESS_METRICS,
   CORN_BELT_FIPS,
   type CropProgressRecord,
 } from '../../utils/usdaNass';
+import { getISOWeek, parseLocalDate } from '../../utils/isoWeek';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -59,15 +63,6 @@ const METRIC_LABELS: Record<string, string> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** ISO week number */
-function getISOWeek(date: Date): number {
-  const d = new Date(date);
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-  const week1 = new Date(d.getFullYear(), 0, 4);
-  return 1 + Math.round(((d.getTime() - week1.getTime()) / 86400000 - 3 + ((week1.getDay() + 6) % 7)) / 7);
-}
-
 /**
  * From a set of records for one commodity, build MetricSummary[].
  * Computes:
@@ -88,14 +83,14 @@ function buildMetricSummaries(records: CropProgressRecord[]): MetricSummary[] {
 
     // Current year — latest record at or before this week
     const currentYearNational = nationalRecords
-      .filter((r) => r.year === currentYear && getISOWeek(new Date(r.referenceDate)) <= currentWeek)
+      .filter((r) => r.year === currentYear && getISOWeek(parseLocalDate(r.referenceDate)) <= currentWeek)
       .sort((a, b) => b.referenceDate.localeCompare(a.referenceDate));
     const currentEntry = currentYearNational[0] ?? null;
     const currentWeekActual = currentEntry ? getISOWeek(new Date(currentEntry.referenceDate)) : currentWeek;
 
     // Prior year same week
     const priorYearNational = nationalRecords.filter(
-      (r) => r.year === currentYear - 1 && getISOWeek(new Date(r.referenceDate)) === currentWeekActual,
+      (r) => r.year === currentYear - 1 && getISOWeek(parseLocalDate(r.referenceDate)) === currentWeekActual,
     );
     const priorEntry = priorYearNational[0] ?? null;
 
@@ -104,7 +99,7 @@ function buildMetricSummaries(records: CropProgressRecord[]): MetricSummary[] {
       (r) =>
         r.year >= currentYear - 5 &&
         r.year < currentYear &&
-        getISOWeek(new Date(r.referenceDate)) === currentWeekActual,
+        getISOWeek(parseLocalDate(r.referenceDate)) === currentWeekActual,
     );
     const fiveYearAvg =
       fiveYearNational.length > 0
@@ -118,7 +113,7 @@ function buildMetricSummaries(records: CropProgressRecord[]): MetricSummary[] {
           (r) =>
             r.stateFipsCode === fips &&
             r.year === currentYear &&
-            getISOWeek(new Date(r.referenceDate)) <= currentWeek,
+            getISOWeek(parseLocalDate(r.referenceDate)) <= currentWeek,
         )
         .sort((a, b) => b.referenceDate.localeCompare(a.referenceDate))[0] ?? null;
 
@@ -126,7 +121,7 @@ function buildMetricSummaries(records: CropProgressRecord[]): MetricSummary[] {
         (r) =>
           r.stateFipsCode === fips &&
           r.year === currentYear - 1 &&
-          getISOWeek(new Date(r.referenceDate)) === currentWeekActual,
+          getISOWeek(parseLocalDate(r.referenceDate)) === currentWeekActual,
       ) ?? null;
 
       return {
@@ -309,22 +304,29 @@ export function CropProgressTab() {
   const [isLoading, setIsLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [lastFetchedAt, setLastFetchedAt] = useState<string | null>(null);
+  const [isPartialCache, setIsPartialCache] = useState(false);
 
   const currentYear = new Date().getFullYear();
 
-  // Load cached records on mount + commodity change
+  // Load cached records on mount + commodity change; detect partial cache
   useEffect(() => {
-    getCachedCropProgressAny(activeCommodity, currentYear).then((cached) => {
+    let cancelled = false;
+    Promise.all([
+      getCachedCropProgressAny(activeCommodity, currentYear),
+      getCropProgressCacheMeta(activeCommodity, currentYear),
+    ]).then(([cached, meta]) => {
+      if (cancelled) return;
       if (cached.length > 0) {
         setRecords(cached);
-        const latest = cached.reduce((a, b) =>
-          a.fetchedAt > b.fetchedAt ? a : b,
-        );
+        const latest = cached.reduce((a, b) => (a.fetchedAt > b.fetchedAt ? a : b));
         setLastFetchedAt(latest.fetchedAt);
+        setIsPartialCache(meta?.partial === true);
       } else {
         setRecords([]);
+        setIsPartialCache(false);
       }
     });
+    return () => { cancelled = true; };
   }, [activeCommodity, currentYear]);
 
   const handleFetch = useCallback(
@@ -342,33 +344,40 @@ export function CropProgressTab() {
       setFetchError(null);
 
       try {
-        const result = await fetchCropProgress(activeCommodity, currentYear, nassApiKey, proxyUrl);
-
-        // On retry: merge new records in, clear that metric's error
         if (retryMetric) {
+          // Per-metric retry: only 6 requests (national + 5 states), not 24
+          const result = await fetchCropProgressOneMetric(
+            activeCommodity, currentYear, retryMetric, nassApiKey, proxyUrl,
+          );
           setRecords((prev) => {
             const filtered = prev.filter((r) => r.unitDesc !== retryMetric);
-            return [...filtered, ...result.records.filter((r) => r.unitDesc === retryMetric)];
+            return [...filtered, ...result.records];
           });
           setMetricErrors((prev) => {
             const next = { ...prev };
             if (!result.metricErrors[retryMetric]) delete next[retryMetric];
-            return { ...next, ...result.metricErrors };
+            else next[retryMetric] = result.metricErrors[retryMetric];
+            // Update partial flag in IndexedDB based on remaining errors
+            void updateCachePartialStatus(activeCommodity, currentYear, next);
+            setIsPartialCache(Object.keys(next).length > 0);
+            return next;
           });
+          if (result.records.length > 0) setLastFetchedAt(new Date().toISOString());
         } else {
+          // Full refresh: all 24 requests
+          const result = await fetchCropProgress(activeCommodity, currentYear, nassApiKey, proxyUrl);
           setRecords((prev) => {
-            // Merge new records — replace same id
             const map = new Map(prev.map((r) => [r.id, r]));
             for (const r of result.records) map.set(r.id, r);
             return Array.from(map.values());
           });
           setMetricErrors(result.metricErrors);
-        }
-
-        if (result.records.length > 0) {
-          setLastFetchedAt(new Date().toISOString());
-        } else if (Object.keys(result.metricErrors).length === CROP_PROGRESS_METRICS.length) {
-          setFetchError('All metric requests failed. Check your NASS API key and proxy URL.');
+          setIsPartialCache(Object.keys(result.metricErrors).length > 0);
+          if (result.records.length > 0) {
+            setLastFetchedAt(new Date().toISOString());
+          } else if (Object.keys(result.metricErrors).length === CROP_PROGRESS_METRICS.length) {
+            setFetchError('All metric requests failed. Check your NASS API key and proxy URL.');
+          }
         }
       } catch (err) {
         setFetchError(`Fetch failed: ${(err as Error).message}`);
@@ -450,6 +459,21 @@ export function CropProgressTab() {
       {fetchError && (
         <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-sm text-[var(--negative)]">
           {fetchError}
+        </div>
+      )}
+
+      {/* Partial cache banner — shown on reload when a previous fetch partially failed */}
+      {isPartialCache && !fetchError && !isLoading && (
+        <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 px-4 py-3 flex items-center justify-between gap-4">
+          <p className="text-sm text-[var(--warning)]">
+            ⚠ Some metrics are missing from the last fetch. Use the per-metric Retry buttons below, or click Refresh to reload all.
+          </p>
+          <button
+            onClick={() => void handleFetch()}
+            className="text-xs text-[var(--warning)] underline hover:no-underline shrink-0"
+          >
+            Refresh all
+          </button>
         </div>
       )}
 

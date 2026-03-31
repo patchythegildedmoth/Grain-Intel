@@ -2,12 +2,14 @@
  * USDA NASS QuickStats API client.
  *
  * Data fetched via existing Cloudflare Worker proxy (`/usda-nass` route).
- * The client sends `nassApiKey` as a query param; the Worker injects it into
- * the upstream NASS URL and strips it from the forwarded request.
+ * The client sends `nassApiKey` via the X-NASS-Api-Key HTTP header (NOT a URL param)
+ * so it never appears in Cloudflare request logs.
  *
  * Cache TTL: 7 days (matches NASS weekly report cadence).
  * Multi-metric: makes 4 parallel requests per commodity (one per unit_desc).
  * Partial failure: on 1-3 of 4 requests failing, still returns what succeeded.
+ *   - Partial results are flagged with `partial: true` in cache metadata so the
+ *     UI can show a "Some metrics missing — Refresh" banner after page reload.
  */
 
 import { put, get, getByIndex, STORES } from './indexedDb';
@@ -34,6 +36,8 @@ export interface CropProgressRecord {
 export interface CropProgressFetchMeta {
   key: string; // `crop-progress-meta:{commodity}:{year}`
   fetchedAt: string;
+  /** True when some metrics failed — UI shows "partially loaded" banner */
+  partial?: boolean;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -68,15 +72,25 @@ function cacheMetaKey(commodity: string, year: number): string {
 async function isCacheValid(commodity: string, year: number): Promise<boolean> {
   const meta = await get<CropProgressFetchMeta>(STORES.fetchMetadata, cacheMetaKey(commodity, year));
   if (!meta) return false;
+  if (meta.partial) return false; // partial cache is always considered stale
   const age = Date.now() - new Date(meta.fetchedAt).getTime();
   return age < CACHE_TTL_MS;
 }
 
-async function saveCacheMeta(commodity: string, year: number): Promise<void> {
+async function saveCacheMeta(commodity: string, year: number, partial: boolean): Promise<void> {
   await put(STORES.fetchMetadata, {
     key: cacheMetaKey(commodity, year),
     fetchedAt: new Date().toISOString(),
+    partial,
   });
+}
+
+/** Read the fetch metadata for a commodity/year (used by UI for partial banner). */
+export async function getCropProgressCacheMeta(
+  commodity: string,
+  year: number,
+): Promise<CropProgressFetchMeta | null> {
+  return (await get<CropProgressFetchMeta>(STORES.fetchMetadata, cacheMetaKey(commodity, year))) ?? null;
 }
 
 // ─── NASS API response shape ──────────────────────────────────────────────────
@@ -118,20 +132,23 @@ async function fetchOneMetric(
   stateFipsCode: string | null,
   year: number,
 ): Promise<CropProgressRecord[]> {
+  // Key goes in a custom header — never in the URL so it stays out of Cloudflare logs
   const params = new URLSearchParams({
     commodity_desc: NASS_COMMODITIES[commodity as NassCommodity] ?? commodity.toUpperCase(),
     statisticcat_desc: 'PROGRESS',
     unit_desc: unitDesc,
     freq_desc: 'WEEKLY',
     year: String(year),
-    nassApiKey,
   });
   if (stateFipsCode) {
     params.set('state_fips_code', stateFipsCode);
   }
 
   const url = `${proxyUrl}/usda-nass?${params.toString()}`;
-  const resp = await fetch(url, { signal: AbortSignal.timeout(15000) });
+  const resp = await fetch(url, {
+    signal: AbortSignal.timeout(15000),
+    headers: { 'X-NASS-Api-Key': nassApiKey },
+  });
   if (!resp.ok) throw new Error(`NASS API ${resp.status} for ${commodity} ${unitDesc}`);
 
   const json = await resp.json() as NassApiResponse;
@@ -219,18 +236,70 @@ export async function fetchCropProgress(
     await Promise.all(
       allRecords.map((r) => put(STORES.cropProgress, r as unknown as Record<string, unknown>)),
     );
-    // Only mark as fully cached if no errors
-    if (Object.keys(metricErrors).length === 0) {
-      await saveCacheMeta(commodity, year);
-    }
+    const isPartial = Object.keys(metricErrors).length > 0;
+    await saveCacheMeta(commodity, year, isPartial);
   }
 
   return { records: allRecords, metricErrors };
 }
 
 /**
+ * Fetch a single metric for one commodity + year (used by per-metric Retry in CropProgressTab).
+ * Only 6 requests (national + 5 Corn Belt states) instead of the full 24.
+ */
+export async function fetchCropProgressOneMetric(
+  commodity: string,
+  year: number,
+  unitDesc: string,
+  nassApiKey: string,
+  proxyUrl: string,
+): Promise<FetchCropProgressResult> {
+  const stateFipsCodes = [null, ...CORN_BELT_FIPS];
+  const metricErrors: Record<string, string> = {};
+  const allRecords: CropProgressRecord[] = [];
+
+  await Promise.all(
+    stateFipsCodes.map(async (fips) => {
+      try {
+        const recs = await fetchOneMetric(nassApiKey, proxyUrl, commodity, unitDesc, fips, year);
+        allRecords.push(...recs);
+      } catch (err) {
+        if (!metricErrors[unitDesc]) {
+          metricErrors[unitDesc] = (err as Error).message;
+        }
+      }
+    }),
+  );
+
+  // Persist new records and update partial status
+  if (allRecords.length > 0) {
+    await Promise.all(
+      allRecords.map((r) => put(STORES.cropProgress, r as unknown as Record<string, unknown>)),
+    );
+  }
+
+  return { records: allRecords, metricErrors };
+}
+
+/**
+ * After a single-metric retry, re-evaluate whether the full cache is still partial.
+ * Reads existing metadata, merges remaining metric errors, and updates the partial flag.
+ */
+export async function updateCachePartialStatus(
+  commodity: string,
+  year: number,
+  remainingMetricErrors: Record<string, string>,
+): Promise<void> {
+  const isPartial = Object.keys(remainingMetricErrors).length > 0;
+  const existing = await getCropProgressCacheMeta(commodity, year);
+  if (existing) {
+    await saveCacheMeta(commodity, year, isPartial);
+  }
+}
+
+/**
  * Get cached crop progress from IndexedDB.
- * Returns empty array if not cached or cache is stale.
+ * Returns empty array if not cached or cache is stale (including partial).
  */
 export async function getCachedCropProgress(
   commodity: string,
@@ -243,7 +312,7 @@ export async function getCachedCropProgress(
 }
 
 /**
- * Get cached crop progress — returns even stale data (for display while refreshing).
+ * Get cached crop progress — returns even stale/partial data (for display while refreshing).
  */
 export async function getCachedCropProgressAny(commodity: string, year: number): Promise<CropProgressRecord[]> {
   const all = await getByIndex<CropProgressRecord>(STORES.cropProgress, 'by-commodity', commodity);
