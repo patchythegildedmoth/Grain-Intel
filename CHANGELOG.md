@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0.0] - 2026-03-31
+
+### Added
+- **Market Factors hub** — new top-level navigation group with 4 sub-tabs: This Week, Weather, Seasonal Patterns, Crop Progress
+- **Top navigation bar** — horizontal 4-group tab bar (Positions · Market · Market Factors · Tools) replaces the vertical sidebar; group-level alert rollup dots; arrow-key accessible
+- **SectionNav** — secondary horizontal module rail; renders module links for Positions/Market/Tools, and hub sub-tabs for Market Factors
+- **This Week tab** — 3-panel morning snapshot: weather risk severity, corn seasonal vs 5-year avg (signed %), crop condition Good+Excellent vs prior year; each panel navigates to its full tab
+- **Seasonal Patterns tab** — Recharts line chart with 5-year mean ± 1 SD bands and current-year actuals; Corn, Soybeans, Wheat; ISO week x-axis with current week highlighted; roll-day discontinuity filter
+- **Crop Progress tab** — USDA NASS weekly crop condition data; Corn, Soybeans, Winter Wheat; national + IL/IA/MN/NE/IN; div-based bar chart with current/prior year/5yr avg; per-metric Retry on failure
+- **USDA NASS API key** — stored in Daily Inputs (same pattern as proxy URL); feeds Crop Progress tab
+- **`/usda-nass` worker route** — Cloudflare Worker now proxies NASS QuickStats in addition to Yahoo Finance; NASS API key passed via `X-NASS-Api-Key` header (never in URL logs); Origin allowlist (prod + localhost)
+- **`crop-progress` IndexedDB store** — added to `grain-intel-historical` DB (version 2); 7-day TTL cache with partial-fetch tracking
+- **`src/utils/isoWeek.ts`** — shared `getISOWeek()` + `parseLocalDate()` utility; eliminates triplicated code; `parseLocalDate` prevents timezone-induced week shifts for users west of UTC
+
+### Changed
+- Sidebar replaced by TopNavBar + SectionNav; `NAV_ITEMS` export preserved for Command Palette and Cmd+1–9 shortcuts
+- `#weather` hash now resolves to Market Factors hub with Weather tab active (backward compatible); bookmarks rewritten to `#market-factors`
+- Breadcrumb group labels updated: "main" → "Positions", new "Market Factors" group
+
+### Fixed
+- Roll-day filter in SeasonalPatternsTab now compares against last *accepted* price (not `sorted[i-1]`), preventing consecutive roll-day records from passing through
+- `ThisWeekTab` async effects now have cancellation guards — prevents stale `setState` on fast tab switches
+- Per-metric Crop Progress Retry sends 6 targeted requests instead of re-fetching all 24; partial cache state correctly persists across page reloads with amber banner
+
 ## [1.1.1.0] - 2026-03-30
 
 ### Added
