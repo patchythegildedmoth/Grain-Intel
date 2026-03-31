@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1.0] - 2026-03-31
+
+### Added
+- **Historical Analogs z-score context** — "Matching against current conditions" header under the analog table shows current precip SD, temp SD, raw values, and event type; `Precip SD` and `Temp SD` columns added to the table so each row shows the historical year's deviation alongside raw values
+- **`filterRollDays` utility** — generic `filterRollDays<T>` in `src/utils/isoWeek.ts`; compares each record against the last accepted value (not the previous raw record) to correctly handle consecutive roll days; replaces duplicated inline logic in SeasonalPatternsTab and ThisWeekTab
+- **NASS concurrency limiter** — `usdaNass.ts` now caps NASS requests at 6 in-flight simultaneously; prevents browser connection queue exhaustion on first Crop Progress load (24 requests)
+
+### Fixed
+- **`SectionNav` React 19 concurrent mode** — `visitedRef.current.add(activeModule)` moved into `useEffect`; mutating a ref during render is unsafe when React may call the render function multiple times before committing
+- **NASS API key input** — changed from `type="text"` to `type="password"` with `autoComplete="off"`; prevents the key from appearing in plaintext and stops browser autofill
+- **ThisWeekTab roll-day filter bug** — old inline filter compared against `sorted[i-1]`, which could admit a second consecutive roll-day record; fixed by using shared `filterRollDays` (compares against last accepted)
+
 ## [1.2.0.0] - 2026-03-31
 
 ### Added

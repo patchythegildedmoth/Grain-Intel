@@ -15,7 +15,7 @@ import { useWeatherStore } from '../../store/useWeatherStore';
 import { getCachedPrices, fetchHistoricalPrices, CONTINUOUS_SYMBOLS } from '../../utils/historicalYahoo';
 import { useMarketDataStore } from '../../store/useMarketDataStore';
 import { getCachedCropProgressAny } from '../../utils/usdaNass';
-import { getISOWeek, parseLocalDate } from '../../utils/isoWeek';
+import { getISOWeek, parseLocalDate, filterRollDays } from '../../utils/isoWeek';
 import type { MarketFactorsTab } from '../layout/SectionNav';
 
 // ─── Compute seasonal context for current week ────────────────────────────────
@@ -42,15 +42,8 @@ async function getSeasonalContext(symbol: string): Promise<SeasonalContext> {
 
   if (priceData.length === 0) return { currentClose: null, fiveYearMean: null, percentDiff: null, asOfDate: null, weeksOfHistory: 0 };
 
-  // Roll-day filter
-  const sorted = [...priceData].sort((a, b) => a.date.localeCompare(b.date));
-  const filtered = sorted.filter((_, i) => {
-    if (i === 0) return true;
-    const prev = sorted[i - 1].close;
-    const curr = sorted[i].close;
-    if (prev > 0 && Math.abs((curr - prev) / prev) > 0.15) return false;
-    return true;
-  });
+  // Roll-day filter (shared utility — compares against last accepted value)
+  const filtered = filterRollDays(priceData);
 
   // Current year most recent close at current ISO week
   const currentYearDays = filtered.filter((d) => {
