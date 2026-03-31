@@ -8,7 +8,8 @@ interface MarketDataState {
   history: Record<string, DailyMarketInputs>;
   m2mSnapshots: Record<string, M2MSnapshot>;
   lastUpdated: string | null;
-  proxyUrl: string; // Cloudflare Worker URL for Yahoo Finance proxy
+  proxyUrl: string; // Cloudflare Worker URL for Yahoo Finance proxy (also proxies NASS)
+  nassApiKey: string; // USDA NASS QuickStats API key (free, public — no billing risk)
 
   // Actions
   updateSellBasis: (entries: MarketBasisEntry[]) => void;
@@ -20,6 +21,7 @@ interface MarketDataState {
   saveM2MSnapshot: (snapshot: Omit<M2MSnapshot, 'timestamp'>) => void;
   getInputsForDate: (date: string) => DailyMarketInputs | null;
   setProxyUrl: (url: string) => void;
+  setNassApiKey: (key: string) => void;
   clearData: () => void;
 }
 
@@ -48,6 +50,7 @@ export const useMarketDataStore = create<MarketDataState>()(
       m2mSnapshots: {},
       lastUpdated: null,
       proxyUrl: '',
+      nassApiKey: '',
 
       updateSellBasis: (entries) =>
         set((s) => ({
@@ -104,6 +107,7 @@ export const useMarketDataStore = create<MarketDataState>()(
       },
 
       setProxyUrl: (url) => set({ proxyUrl: url }),
+      setNassApiKey: (key) => set({ nassApiKey: key }),
 
       clearData: () =>
         set({
@@ -115,13 +119,14 @@ export const useMarketDataStore = create<MarketDataState>()(
     }),
     {
       name: 'grain-intel-market-data',
-      version: 1,
+      version: 2,
       partialize: (state) => ({
         current: state.current,
         history: state.history,
         m2mSnapshots: state.m2mSnapshots,
         lastUpdated: state.lastUpdated,
         proxyUrl: state.proxyUrl,
+        nassApiKey: state.nassApiKey,
       }),
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as Record<string, unknown>;
@@ -130,8 +135,13 @@ export const useMarketDataStore = create<MarketDataState>()(
           const current = state.current as Record<string, unknown> | undefined;
           if (current && !current.freightTiers) {
             current.freightTiers = {};
-            // Clean up old field name if it exists
             delete current.freightCosts;
+          }
+        }
+        if (version <= 1) {
+          // v1 → v2: add nassApiKey field
+          if (!('nassApiKey' in state)) {
+            state.nassApiKey = '';
           }
         }
         return state;

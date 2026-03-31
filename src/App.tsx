@@ -17,22 +17,45 @@ import { PriceLaterExposure } from './components/modules/PriceLaterExposure';
 import { MarkToMarket } from './components/modules/MarkToMarket';
 import { FreightEfficiencyAnalysis } from './components/modules/FreightEfficiencyAnalysis';
 import { EntityLocationMap } from './components/modules/EntityLocationMap';
-import { WeatherDashboard } from './components/modules/WeatherDashboard';
+import { MarketFactorsDashboard } from './components/modules/MarketFactorsDashboard';
+import type { MarketFactorsTab } from './components/layout/SectionNav';
 
 function getHashModule(): string {
   const hash = window.location.hash.replace('#', '');
-  return hash || 'upload';
+  // Normalize hash — strip query params for module resolution
+  const base = hash.split('?')[0];
+  return base || 'upload';
 }
 
 export default function App() {
   const isLoaded = useContractStore((s) => s.isLoaded);
   const [activeModule, setActiveModule] = useState(getHashModule);
+  // Market Factors sub-tab state — lifted here so SectionNav and MarketFactorsDashboard stay in sync
+  const [activeMarketFactorsTab, setActiveMarketFactorsTab] = useState<MarketFactorsTab>('this-week');
 
   // Sync hash to state
   useEffect(() => {
-    const handler = () => setActiveModule(getHashModule());
+    const handler = () => {
+      const module = getHashModule();
+      setActiveModule(module);
+      // #weather backward compat: resolve to market-factors module + weather tab
+      if (module === 'weather') {
+        setActiveModule('market-factors');
+        setActiveMarketFactorsTab('weather');
+      }
+    };
     window.addEventListener('hashchange', handler);
     return () => window.removeEventListener('hashchange', handler);
+  }, []);
+
+  // Handle initial #weather load
+  useEffect(() => {
+    if (activeModule === 'weather') {
+      setActiveModule('market-factors');
+      setActiveMarketFactorsTab('weather');
+    }
+  // Only run on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // When data loads, navigate to morning brief
@@ -44,6 +67,13 @@ export default function App() {
   }, [isLoaded, activeModule]);
 
   const handleModuleChange = useCallback((id: string) => {
+    // #weather backward compat — rewrite to canonical hash so bookmarks work
+    if (id === 'weather') {
+      setActiveModule('market-factors');
+      setActiveMarketFactorsTab('weather');
+      window.location.hash = 'market-factors';
+      return;
+    }
     setActiveModule(id);
     window.location.hash = id;
   }, []);
@@ -123,8 +153,14 @@ export default function App() {
         return <MarkToMarket onNavigate={handleModuleChange} />;
       case 'freight-efficiency':
         return <FreightEfficiencyAnalysis />;
-      case 'weather':
-        return <WeatherDashboard onNavigate={handleModuleChange} />;
+      case 'market-factors':
+        return (
+          <MarketFactorsDashboard
+            activeTab={activeMarketFactorsTab}
+            onTabChange={setActiveMarketFactorsTab}
+            onNavigate={handleModuleChange}
+          />
+        );
       case 'entity-map':
         return <EntityLocationMap onNavigate={handleModuleChange} />;
       case 'data-health':
@@ -135,7 +171,12 @@ export default function App() {
   };
 
   return (
-    <AppShell activeModule={activeModule} onModuleChange={handleModuleChange}>
+    <AppShell
+      activeModule={activeModule}
+      onModuleChange={handleModuleChange}
+      activeMarketFactorsTab={activeMarketFactorsTab}
+      onMarketFactorsTabChange={setActiveMarketFactorsTab}
+    >
       <ErrorBoundary fallbackMessage={`Error in module: ${activeModule}`}>
         {moduleContent()}
       </ErrorBoundary>
