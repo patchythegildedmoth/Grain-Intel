@@ -63,6 +63,29 @@ export const NASS_COMMODITIES = {
 } as const;
 export type NassCommodity = keyof typeof NASS_COMMODITIES;
 
+// ─── Concurrency limiter ─────────────────────────────────────────────────────
+
+const MAX_CONCURRENT_NASS = 6;
+
+/** Run async tasks with at most `limit` in flight at once. Preserves order. */
+async function runWithConcurrencyLimit<T>(
+  tasks: (() => Promise<T>)[],
+  limit: number,
+): Promise<T[]> {
+  const results: (T | undefined)[] = new Array(tasks.length);
+  let next = 0;
+
+  async function worker() {
+    while (next < tasks.length) {
+      const idx = next++;
+      results[idx] = await tasks[idx]();
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, () => worker()));
+  return results as T[];
+}
+
 // ─── Cache helpers ────────────────────────────────────────────────────────────
 
 function cacheMetaKey(commodity: string, year: number): string {
@@ -212,9 +235,9 @@ export async function fetchCropProgress(
   // Targets: national (null) + Corn Belt states
   const stateFipsCodes = [null, ...CORN_BELT_FIPS];
 
-  // Run 4 metrics × 6 targets in parallel
-  const promises = CROP_PROGRESS_METRICS.flatMap((unitDesc) =>
-    stateFipsCodes.map(async (fips) => {
+  // Run 4 metrics × 6 targets with concurrency limit to avoid NASS rate limits
+  const tasks = CROP_PROGRESS_METRICS.flatMap((unitDesc) =>
+    stateFipsCodes.map((fips) => async () => {
       try {
         const recs = await fetchOneMetric(nassApiKey, proxyUrl, commodity, unitDesc, fips, year);
         return { unitDesc, recs };
@@ -223,12 +246,12 @@ export async function fetchCropProgress(
         if (!metricErrors[unitDesc]) {
           metricErrors[unitDesc] = (err as Error).message;
         }
-        return { unitDesc, recs: [] };
+        return { unitDesc, recs: [] as CropProgressRecord[] };
       }
     }),
   );
 
-  const results = await Promise.all(promises);
+  const results = await runWithConcurrencyLimit(tasks, MAX_CONCURRENT_NASS);
   for (const { recs } of results) allRecords.push(...recs);
 
   // Cache what we got (even partial results — avoids re-fetching everything on retry)
@@ -271,12 +294,15 @@ export async function fetchCropProgressOneMetric(
     }),
   );
 
-  // Persist new records and update partial status
+  // Persist new records
   if (allRecords.length > 0) {
     await Promise.all(
       allRecords.map((r) => put(STORES.cropProgress, r as unknown as Record<string, unknown>)),
     );
   }
+
+  // Re-evaluate partial status after retry — clears "partial data" banner when all metrics succeed
+  await updateCachePartialStatus(commodity, year, metricErrors);
 
   return { records: allRecords, metricErrors };
 }
