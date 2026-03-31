@@ -2,17 +2,18 @@
  * Thin Promise wrapper for IndexedDB.
  * Database: grain-intel-historical
  *
- * Object stores: weather-history, price-history, cash-prices, fetch-metadata
+ * Object stores: weather-history, price-history, cash-prices, fetch-metadata, crop-progress
  */
 
 const DB_NAME = 'grain-intel-historical';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Bumped v2: added crop-progress store
 
 const STORES = {
   weatherHistory: 'weather-history',
   priceHistory: 'price-history',
   cashPrices: 'cash-prices',
   fetchMetadata: 'fetch-metadata',
+  cropProgress: 'crop-progress',
 } as const;
 
 export type StoreName = (typeof STORES)[keyof typeof STORES];
@@ -39,6 +40,11 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(STORES.fetchMetadata)) {
         db.createObjectStore(STORES.fetchMetadata, { keyPath: 'key' });
+      }
+      if (!db.objectStoreNames.contains(STORES.cropProgress)) {
+        const cp2 = db.createObjectStore(STORES.cropProgress, { keyPath: 'id' });
+        cp2.createIndex('by-commodity', 'commodity');
+        cp2.createIndex('by-date', 'referenceDate');
       }
     };
     request.onsuccess = () => resolve(request.result);

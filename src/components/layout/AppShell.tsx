@@ -1,28 +1,73 @@
 import { type ReactNode, useState, useEffect, useCallback } from 'react';
-import { Sidebar, NAV_ITEMS } from './Sidebar';
+import { NAV_ITEMS } from './Sidebar';
+import { TopNavBar } from './TopNavBar';
+import { SectionNav, type NavGroup, type MarketFactorsTab } from './SectionNav';
 import { DarkModeToggle } from './DarkModeToggle';
 import { AlertDrawer, AlertBellButton } from './AlertDrawer';
 import { CommandPalette } from './CommandPalette';
 import { Breadcrumb } from '../shared/Breadcrumb';
 import { useContractStore } from '../../store/useContractStore';
 
+// Derive group from module ID
+export const MODULE_GROUP: Record<string, NavGroup> = {
+  'morning-brief': 'positions',
+  'net-position': 'positions',
+  'unpriced-exposure': 'positions',
+  'delivery-timeline': 'positions',
+  'basis-spread': 'positions',
+  'customer-concentration': 'positions',
+  'risk-profile': 'positions',
+  'daily-inputs': 'market',
+  'price-later': 'market',
+  'mark-to-market': 'market',
+  'freight-efficiency': 'market',
+  'weather': 'market-factors',
+  'market-factors': 'market-factors',
+  'entity-map': 'tools',
+  'scenario': 'tools',
+  'data-health': 'tools',
+};
+
+// Default first module for each group when switching tabs
+const GROUP_DEFAULT_MODULE: Record<NavGroup, string> = {
+  positions: 'morning-brief',
+  market: 'daily-inputs',
+  'market-factors': 'market-factors',
+  tools: 'entity-map',
+};
+
 interface AppShellProps {
   activeModule: string;
   onModuleChange: (id: string) => void;
+  activeMarketFactorsTab: MarketFactorsTab;
+  onMarketFactorsTabChange: (tab: MarketFactorsTab) => void;
   children: ReactNode;
 }
 
-export function AppShell({ activeModule, onModuleChange, children }: AppShellProps) {
+export function AppShell({
+  activeModule,
+  onModuleChange,
+  activeMarketFactorsTab,
+  onMarketFactorsTabChange,
+  children,
+}: AppShellProps) {
   const fileName = useContractStore((s) => s.fileName);
   const uploadDate = useContractStore((s) => s.uploadDate);
   const clearData = useContractStore((s) => s.clearData);
   const [alertDrawerOpen, setAlertDrawerOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
 
-  // Global keyboard shortcuts: Cmd+K (palette), Ctrl+1-9 (modules)
+  const activeGroup: NavGroup = MODULE_GROUP[activeModule] ?? 'positions';
+
+  // Handle top nav group click — navigate to default module for group
+  const handleGroupChange = useCallback((group: NavGroup) => {
+    const defaultModule = GROUP_DEFAULT_MODULE[group];
+    onModuleChange(defaultModule);
+  }, [onModuleChange]);
+
+  // Global keyboard shortcuts: Cmd+K (palette), Cmd+1-9 (modules)
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Ignore when typing in an input
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement || e.target instanceof HTMLSelectElement) return;
 
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -31,7 +76,6 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
         return;
       }
 
-      // Ctrl+1-9: navigate to numbered modules
       if ((e.metaKey || e.ctrlKey) && e.key >= '1' && e.key <= '9') {
         e.preventDefault();
         const idx = parseInt(e.key) - 1;
@@ -94,21 +138,30 @@ export function AppShell({ activeModule, onModuleChange, children }: AppShellPro
         <DarkModeToggle />
       </header>
 
-      {/* Main area */}
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar activeModule={activeModule} onModuleChange={onModuleChange} />
-        <main className="flex-1 overflow-y-auto">
-          {activeModule !== 'morning-brief' && (
-            <div className="px-6 pt-3 pb-0">
-              <Breadcrumb activeModule={activeModule} onNavigate={onModuleChange} />
-            </div>
-          )}
-          {/* key forces remount on module switch → triggers fade+slide animation */}
-          <div key={activeModule} className="animate-page-transition">
-            {children}
+      {/* Top nav bar (group tabs) */}
+      <TopNavBar activeGroup={activeGroup} onGroupChange={handleGroupChange} />
+
+      {/* Section nav (module row or Market Factors sub-tabs) */}
+      <SectionNav
+        activeGroup={activeGroup}
+        activeModule={activeModule}
+        onModuleChange={onModuleChange}
+        activeMarketFactorsTab={activeMarketFactorsTab}
+        onMarketFactorsTabChange={onMarketFactorsTabChange}
+      />
+
+      {/* Main content area */}
+      <main className="flex-1 overflow-y-auto">
+        {activeModule !== 'morning-brief' && (
+          <div className="px-6 pt-3 pb-0">
+            <Breadcrumb activeModule={activeModule} onNavigate={onModuleChange} />
           </div>
-        </main>
-      </div>
+        )}
+        {/* key forces remount on module switch → triggers fade+slide animation */}
+        <div key={activeModule} className="animate-page-transition">
+          {children}
+        </div>
+      </main>
 
       {/* Alert Drawer */}
       <AlertDrawer

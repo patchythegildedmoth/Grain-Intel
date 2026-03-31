@@ -11,9 +11,12 @@ export function Breadcrumb({ activeModule, activeTab, onNavigate }: BreadcrumbPr
   if (!moduleInfo) return null;
 
   const groupLabels: Record<string, string> = {
-    main: 'Analytics',
-    market: 'Market Data',
+    positions: 'Positions',
+    market: 'Market',
+    'market-factors': 'Market Factors',
     tools: 'Tools',
+    // legacy aliases
+    main: 'Analytics',
   };
 
   return (

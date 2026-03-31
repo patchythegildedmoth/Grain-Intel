@@ -11,7 +11,7 @@ import { getCommodityColor } from '../../utils/commodityColors';
 export function DailyInputs() {
   const isLoaded = useContractStore((s) => s.isLoaded);
   const { basisRows, settlementRows, commodities, gaps, freightRows } = useDailyInputScaffold();
-  const { current, lastUpdated, proxyUrl, setProxyUrl, updateSellBasis, updateSettlements, updateInTransit, updateHtaPaired, updateFreightTiers, saveCurrentInputs } = useMarketDataStore();
+  const { current, lastUpdated, proxyUrl, setProxyUrl, nassApiKey, setNassApiKey, updateSellBasis, updateSettlements, updateInTransit, updateHtaPaired, updateFreightTiers, saveCurrentInputs } = useMarketDataStore();
   const stale = isMarketDataStale(lastUpdated);
 
   // Local state for form editing
@@ -29,6 +29,8 @@ export function DailyInputs() {
   const [fetchResult, setFetchResult] = useState<FetchSettlementsResult | null>(null);
   const [proxyUrlInput, setProxyUrlInput] = useState(proxyUrl);
   const [proxyUrlSaved, setProxyUrlSaved] = useState(false);
+  const [nassApiKeyInput, setNassApiKeyInput] = useState(nassApiKey);
+  const [nassApiKeySaved, setNassApiKeySaved] = useState(false);
 
   const handleFetchSettlements = useCallback(async () => {
     if (!proxyUrl) return;
@@ -57,6 +59,13 @@ export function DailyInputs() {
       setFetchingSettlements(false);
     }
   }, [proxyUrl, settlementRows, settlementEdits]);
+
+  const handleSaveNassApiKey = useCallback(() => {
+    const key = nassApiKeyInput.trim();
+    setNassApiKey(key);
+    setNassApiKeySaved(true);
+    setTimeout(() => setNassApiKeySaved(false), 2000);
+  }, [nassApiKeyInput, setNassApiKey]);
 
   const handleSaveProxyUrl = useCallback(() => {
     const url = proxyUrlInput.trim();
@@ -419,6 +428,39 @@ export function DailyInputs() {
         {!proxyUrl && (
           <span className="text-xs text-[var(--text-muted)] italic">
             Deploy worker first → <code className="text-[10px]">cd worker/yahoo-proxy && npx wrangler deploy</code>
+          </span>
+        )}
+      </div>
+
+      {/* USDA NASS API Key Config */}
+      <div className="flex items-center gap-3 px-4 py-2 bg-[var(--bg-inset)] rounded-lg border border-[var(--border-default)]">
+        <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] whitespace-nowrap">
+          <span>🌱</span>
+          USDA NASS Key:
+        </div>
+        <input
+          type="text"
+          value={nassApiKeyInput}
+          onChange={(e) => { setNassApiKeyInput(e.target.value); setNassApiKeySaved(false); }}
+          className="flex-1 px-2 py-1 text-xs border border-[var(--border-default)] rounded bg-[var(--bg-surface)] dark:bg-gray-700 dark:text-gray-200 font-mono"
+          placeholder="Register free at quickstats.nass.usda.gov/api/"
+        />
+        <button
+          onClick={handleSaveNassApiKey}
+          disabled={nassApiKeyInput === nassApiKey}
+          className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+            nassApiKeySaved
+              ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+              : nassApiKeyInput === nassApiKey
+                ? 'bg-[var(--bg-surface-raised)] text-[var(--text-muted)] dark:bg-gray-700 dark:text-[var(--text-muted)] cursor-not-allowed'
+                : 'bg-indigo-600 text-white hover:bg-indigo-700'
+          }`}
+        >
+          {nassApiKeySaved ? '✓ Saved' : 'Save'}
+        </button>
+        {!nassApiKey && (
+          <span className="text-xs text-[var(--text-muted)] italic">
+            Required for Market Factors → Crop Progress
           </span>
         )}
       </div>
