@@ -8,6 +8,7 @@
 import { useRef, useEffect } from 'react';
 import { NAV_ITEMS } from './Sidebar';
 import { useGlobalAlerts } from '../../hooks/useGlobalAlerts';
+import { MODULE_ICONS, MARKET_FACTORS_TAB_ICONS } from './SidebarIcons';
 import type { ModuleId } from './Sidebar';
 
 export type NavGroup = 'positions' | 'market' | 'market-factors' | 'tools';
@@ -20,11 +21,11 @@ const GROUP_MODULE_IDS: Record<Exclude<NavGroup, 'market-factors'>, ModuleId[]> 
   tools: ['entity-map', 'scenario', 'data-health'],
 };
 
-const MARKET_FACTORS_TABS: { id: MarketFactorsTab; label: string; icon: string }[] = [
-  { id: 'this-week', label: 'This Week', icon: '📅' },
-  { id: 'weather', label: 'Weather', icon: '🌦️' },
-  { id: 'seasonal', label: 'Seasonal', icon: '📊' },
-  { id: 'crop-progress', label: 'Crop Progress', icon: '🌱' },
+const MARKET_FACTORS_TABS: { id: MarketFactorsTab; label: string }[] = [
+  { id: 'this-week', label: 'This Week' },
+  { id: 'weather', label: 'Weather' },
+  { id: 'seasonal', label: 'Seasonal' },
+  { id: 'crop-progress', label: 'Crop Progress' },
 ];
 
 interface SectionNavProps {
@@ -77,7 +78,7 @@ export function SectionNav({
                 }
               `}
             >
-              <span className="text-sm leading-none">{tab.icon}</span>
+              <span className="text-sm leading-none">{MARKET_FACTORS_TAB_ICONS[tab.id] ? MARKET_FACTORS_TAB_ICONS[tab.id]() : null}</span>
               <span>{tab.label}</span>
             </button>
           );
@@ -120,7 +121,7 @@ export function SectionNav({
           >
             {/* Unvisited blue dot on icon */}
             <span className="relative text-sm leading-none">
-              {item.icon}
+              {MODULE_ICONS[item.id] ? MODULE_ICONS[item.id]() : item.icon}
               {isUnvisited && (
                 <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 bg-blue-500 rounded-full" />
               )}

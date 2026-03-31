@@ -4,14 +4,15 @@
  */
 
 import { useGlobalAlerts } from '../../hooks/useGlobalAlerts';
+import { GROUP_ICONS } from './SidebarIcons';
 import type { ModuleId } from './Sidebar';
 import type { NavGroup } from './SectionNav';
 
-const GROUPS: { id: NavGroup; label: string; icon: string }[] = [
-  { id: 'positions', label: 'Positions', icon: '📋' },
-  { id: 'market', label: 'Market', icon: '💰' },
-  { id: 'market-factors', label: 'Market Factors', icon: '🌦️' },
-  { id: 'tools', label: 'Tools', icon: '🔧' },
+const GROUPS: { id: NavGroup; label: string }[] = [
+  { id: 'positions', label: 'Positions' },
+  { id: 'market', label: 'Market' },
+  { id: 'market-factors', label: 'Market Factors' },
+  { id: 'tools', label: 'Tools' },
 ];
 
 // Module IDs per group — for alert rollup dot
@@ -78,7 +79,7 @@ export function TopNavBar({ activeGroup, onGroupChange }: TopNavBarProps) {
               }
             `}
           >
-            <span className="text-base leading-none">{group.icon}</span>
+            <span className="text-base leading-none">{GROUP_ICONS[group.id] ? GROUP_ICONS[group.id]() : null}</span>
             <span>{group.label}</span>
 
             {/* Alert rollup dot */}

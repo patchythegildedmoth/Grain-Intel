@@ -89,6 +89,61 @@ export function IconSearch() {
   return <Icon><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></Icon>;
 }
 
+// ─── Group-level icons (for TopNavBar) ────────────────────────────────────────
+
+// Positions — clipboard with list
+export function IconPositions() {
+  return <Icon><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><line x1="9" y1="12" x2="15" y2="12" /><line x1="9" y1="16" x2="13" y2="16" /></Icon>;
+}
+
+// Market — dollar/chart
+export function IconMarket() {
+  return <Icon><line x1="12" y1="1" x2="12" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" /></Icon>;
+}
+
+// Market Factors — globe/earth
+export function IconGlobe() {
+  return <Icon><circle cx="12" cy="12" r="10" /><line x1="2" y1="12" x2="22" y2="12" /><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" /></Icon>;
+}
+
+// Tools — wrench
+export function IconTools() {
+  return <Icon><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" /></Icon>;
+}
+
+// ─── Market Factors tab icons ─────────────────────────────────────────────────
+
+// This Week — calendar
+export function IconCalendar() {
+  return <Icon><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></Icon>;
+}
+
+// Seasonal — line chart / trend
+export function IconLineChart() {
+  return <Icon><polyline points="22 12 18 12 15 21 9 3 6 12 2 12" /></Icon>;
+}
+
+// Crop Progress — seedling/sprout
+export function IconSeedling() {
+  return <Icon><path d="M7 20h10" /><path d="M12 20v-8" /><path d="M12 12c-3-3-7-3-7 0s4 3 7 0z" /><path d="M12 12c3-3 7-3 7 0s-4 3-7 0z" /></Icon>;
+}
+
+/** Map group IDs to icon components */
+export const GROUP_ICONS: Record<string, () => React.ReactNode> = {
+  'positions': IconPositions,
+  'market': IconMarket,
+  'market-factors': IconGlobe,
+  'tools': IconTools,
+};
+
+/** Map Market Factors tab IDs to icon components */
+export const MARKET_FACTORS_TAB_ICONS: Record<string, () => React.ReactNode> = {
+  'this-week': IconCalendar,
+  'weather': IconWeather,
+  'seasonal': IconLineChart,
+  'crop-progress': IconSeedling,
+};
+
 /** Map module IDs to icon components */
 export const MODULE_ICONS: Record<string, () => React.ReactNode> = {
   'morning-brief': IconBrief,
