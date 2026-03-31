@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.1.1] - 2026-03-31
+
+### Fixed
+- **SVG nav icons restored** — TopNavBar and SectionNav now use SVG icons from SidebarIcons.tsx instead of emojis; the nav restructure wrote fresh components that never adopted the SVG icons from the design delight pass
+- **New group-level SVG icons** — Positions (clipboard), Market (dollar), Market Factors (globe), Tools (wrench) replace emoji in the top nav bar
+- **Market Factors tab icons** — This Week (calendar), Weather (sun), Seasonal (line chart), Crop Progress (seedling) replace emoji in the section nav
+
 ## [1.2.1.0] - 2026-03-31
 
 ### Added
