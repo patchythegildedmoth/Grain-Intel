@@ -484,19 +484,6 @@ Used across all charts. Never repurpose for semantic meaning:
 - **Soil moisture not in historical archive**: Open-Meteo ERA5 archive doesn't include soil moisture for bulk batch fetch. Drought classification uses precipitation z-score + temperature as proxy.
 - **Entity name matching is exact**: Entity names from iRely must match geocoded names exactly (after trim + uppercase normalization). "JOHN SMITH" vs "John Smith" will match, but "JOHN SMITH INC" vs "JOHN SMITH" will not.
 
-## Completed Plan
-
-The interactive navigation plan at `.claude/plans/cozy-humming-coral.md` is fully implemented. All 6 phases shipped:
-
-| Phase | Feature | Status |
-|-------|---------|--------|
-| 1 | Segmented Controls (4 modules) | ✅ Complete |
-| 3 | Alert Drawer + Global Alert System | ✅ Complete |
-| 4 | Command Palette (Cmd+K search) | ✅ Complete |
-| 6 | Breadcrumbs + Cross-Module Links | ✅ Complete |
-| 7 | Inline Scenario Sliders (M2M) | ✅ Complete |
-| 9 | Sidebar Badges + Unvisited Dots | ✅ Complete |
-
 ## Deployment
 
 **GitHub Pages**: https://patchythegildedmoth.github.io/Grain-Intel/
@@ -523,15 +510,32 @@ To deploy: commit changes, push to main. GitHub Actions handles the rest.
 - Health check: curl -sf https://patchythegildedmoth.github.io/Grain-Intel/ -o /dev/null -w "%{http_code}"
 
 ## Module Roadmap
-See `DASHBOARD_MODULES_PLAN.md` (repo root) for the full 19-item feature plan and current status.
 
-**Completed modules**: Entity Map (#1), Freight Tier Heatmap (#2), Weather Dashboard (#7), Keyboard Shortcuts/Command Palette (#14), Notification Badges (#15)
+| # | Module | Category | Status | Notes |
+|---|--------|----------|--------|-------|
+| 1 | Entity Location Map | Maps | Done | Leaflet + Nominatim geocoding, CSV bulk import |
+| 2 | Freight Tier Heatmap | Maps | Done | Integrated into Entity Map as concentric rings |
+| 3 | Delivery Flow Map | Maps | Not Started | Animated lines showing inbound vs outbound grain flow by geography. Line thickness = bushel volume. Filters: commodity, delivery month, freight term. |
+| 4 | USDA Report Integration | Market Data | Partial | Crop Progress tab done (NASS API). WASDE countdown, Export Sales, and historical report impact still not started. |
+| 5 | Basis History Charts | Market Data | Not Started | Sparklines on Basis Spread module using 365-day history already in localStorage. Current year vs prior year overlay. |
+| 6 | Futures Curve Visualization | Market Data | Not Started | Full futures curve (nearby through deferred) per commodity. Dual axis: price left, net bushels right. Shows carry/inversion alongside exposure. |
+| 7 | Weather Dashboard | Market Data | Done | Open-Meteo API, 4-tab module, risk badges, historical correlation engine with IndexedDB |
+| 8 | Historical P&L Trend | Analytics | Not Started | Daily/weekly/monthly P&L from M2M snapshots (already in store). Per-commodity decomposition, futures vs basis split. 7d/30d/90d/YTD toggles. |
+| 9 | Contract Aging Report | Analytics | Not Started | Gantt-style timeline from created date to delivery end. Flag unusually long-open contracts. Color: green/amber/red by age. |
+| 10 | "What Changed" Diff | Analytics | Not Started | Compare today's upload to previousSnapshot. Show new/completed contracts, balance changes >5K bu, pricing type changes. Morning Brief summary card. |
+| 11 | Alerts Timeline | Analytics | Not Started | Log every alert with timestamps. Distinguish "active 3 days" from "new today". Persist in localStorage. Trend detection (worsening vs improving). |
+| 12 | Customizable Morning Brief | UX | Not Started | Drag-and-drop KPI card ordering. Layout preferences in localStorage. Presets: "Merchandiser View", "Management View". |
+| 13 | Commodity Drill-Down | UX | Not Started | Click any commodity name anywhere to open single-commodity detail view (position, exposure, basis, timeline, top entities on one page). |
+| 14 | Keyboard Shortcuts & Quick Nav | UX | Done | Command Palette (Cmd+K), breadcrumbs, cross-module links, Cmd+1-9 |
+| 15 | Notification Badges | UX | Done | Per-module alert counts + unvisited blue dots |
+| 16 | Print / PDF Morning Report | UX | Not Started | One-click PDF of Morning Brief + key charts. KPI cards, critical alerts, net position chart, unpriced summary, basis highlights. 1-2 page executive format. |
+| 17 | Automated iRely Import | Data Integration | Not Started | Blocked by iRely API access. Options: Power Automate, Node file watcher, scheduled task. |
+| 18 | Ethanol / DDG / Soybean Oil | Data Integration | Not Started | Crush margin (soybeans vs meal + oil), ethanol margin (corn vs ethanol + DDG revenue). |
+| 19 | Peer Basis Comparison | Data Integration | Not Started | Your posted basis vs local market average. Sources: DTN, Barchart, or manual competitor tracking. |
 
-**Not started**: Delivery Flow Map (#3), USDA Report (#4), Basis History (#5), Futures Curve (#6), Historical P&L (#8), Contract Aging (#9), What Changed (#10), Alerts Timeline (#11), Customizable Morning Brief (#12), Commodity Drill-Down (#13), Print/PDF Report (#16), iRely API (#17), Ethanol/DDG (#18), Peer Basis (#19)
-
-- Check the status tracker table at session start
-- Work on the current 🟡 module or ask which to start next
-- Update the tracker status and Notes column when completing work
+**Priority TODOs (not in roadmap above):**
+- P2: Unit tests for all analytics hooks (Vitest infrastructure in place, zero hook test coverage)
+- P3: Real-time streaming quotes (requires paid data provider — Polygon.io, Databento, etc. Current Yahoo Finance end-of-day is adequate for daily workflow)
 
 ## Skill routing
 
