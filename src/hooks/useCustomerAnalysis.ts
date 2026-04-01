@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useContractStore } from '../store/useContractStore';
+import { useMarketDataStore } from '../store/useMarketDataStore';
 import { weightedAverage } from '../utils/weightedAverage';
+import { getFreightCost } from '../utils/freightTiers';
 import { THRESHOLDS } from '../utils/alerts';
 import type { AlertLevel } from '../utils/alerts';
 
@@ -40,6 +42,7 @@ export interface CustomerSummary {
 
 export function useCustomerAnalysis() {
   const contracts = useContractStore((s) => s.contracts);
+  const freightTiers = useMarketDataStore((s) => s.current.freightTiers);
 
   return useMemo(() => {
     const openContracts = contracts.filter((c) => c.isOpen);
@@ -152,7 +155,15 @@ export function useCustomerAnalysis() {
 
     const profitability: CustomerProfitability[] = [...entitySales.entries()]
       .map(([entity, sales]) => {
-        const avgSellBasis = weightedAverage(sales.map((c) => ({ value: c.basis, weight: c.pricedQty })));
+        // Adjust sell basis for freight: FOB/Pickup contracts have a tier assigned.
+        // The contract's locked basis is the FOB price (lower than delivered). Adding back
+        // the freight cost gives the true realized margin vs. a delivered buy basis.
+        const avgSellBasis = weightedAverage(sales.map((c) => {
+          const tier = freightTiers?.[c.contractNumber] ?? c.freightTier ?? null;
+          const freightCost = getFreightCost(tier);
+          const effectiveBasis = c.basis !== null && freightCost > 0 ? c.basis + freightCost : c.basis;
+          return { value: effectiveBasis, weight: c.pricedQty };
+        }));
         const completedBushels = sales.reduce((s, c) => s + c.pricedQty, 0);
 
         // Weighted market buy basis across commodities this customer sold
@@ -225,5 +236,5 @@ export function useCustomerAnalysis() {
       totalOpenBushels,
       uniqueEntities: customerSummaries.length,
     };
-  }, [contracts]);
+  }, [contracts, freightTiers]);
 }
