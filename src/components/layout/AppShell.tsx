@@ -171,7 +171,7 @@ export function AppShell({
       />
 
       {/* Footer */}
-      <footer className="h-7 shrink-0 border-t border-[var(--border-default)] bg-[var(--bg-surface)] flex items-center px-4 text-xs text-[var(--text-muted)] no-print">
+      <footer className="h-7 shrink-0 border-t border-[var(--border-default)] bg-[var(--bg-surface)] flex items-center px-4 text-xs text-[var(--text-secondary)] no-print">
         Grain Trading Intelligence Module v1.0.0 &middot; Ag Source LLC
       </footer>
 
