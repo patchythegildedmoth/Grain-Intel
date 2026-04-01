@@ -100,7 +100,7 @@ export function AppShell({
     <div className="flex flex-col h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       {/* Top bar */}
       <header className="h-14 shrink-0 border-b border-[var(--border-default)] bg-[var(--bg-surface)] flex items-center px-4 gap-4 no-print">
-        <h1 className="text-lg font-bold text-[var(--text-primary)] whitespace-nowrap">
+        <h1 className="text-xl font-bold text-[var(--text-primary)] whitespace-nowrap">
           Ag Source <span className="text-[var(--accent)]">Grain Intelligence</span>
         </h1>
 
