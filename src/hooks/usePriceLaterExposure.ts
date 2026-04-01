@@ -142,17 +142,18 @@ export function usePriceLaterExposure() {
 
           if (c.isOverdue) overdueBushels += unpricedBu;
 
+          const adjustedBasis = adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers);
           basisContracts.push({
             contractNumber: c.contractNumber,
             entity: c.entity,
             commodity,
             futuresMonth: c.futureMonthShort,
-            lockedBasis: c.basis ?? 0,
+            lockedBasis: adjustedBasis ?? 0,
             unpricedBushels: unpricedBu,
             currentFuturesPrice: currentFutures,
             currentMarketCashValue:
-              currentFutures !== null && c.basis !== null
-                ? currentFutures + adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers)!
+              currentFutures !== null && adjustedBasis !== null
+                ? currentFutures + adjustedBasis
                 : null,
             daysUntilEnd: c.daysUntilDeliveryEnd,
             isOverdue: c.isOverdue,
