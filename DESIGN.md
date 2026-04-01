@@ -2,7 +2,7 @@
 
 > **Design Vision:** A Bloomberg terminal designed by the Linear team. Dense, fast, professional, calm. Every pixel serves the trader's morning workflow. Open it at 6 AM, understand the book in 3 seconds.
 
-*Source of truth for all UI decisions. Derived from design research across 15 best-in-class dashboards. See `DESIGN_RESEARCH/` for full site reviews, synthesis, and delight playbook.*
+*Source of truth for all UI decisions. Derived from design research across 15 best-in-class dashboards.*
 
 ---
 
@@ -18,15 +18,15 @@
 
 ## Typography
 
-Three-font stack. Each font has a defined role — do not mix roles.
+Two-font stack in practice. Plus Jakarta Sans is loaded but not actively applied; DM Sans handles both body and headings. Geist Mono for data.
 
 | Role | Font | Weight Range | Tailwind Class | Use |
 |------|------|-------------|----------------|-----|
-| Display | Plus Jakarta Sans | 600–800 | `font-display` | Page titles, module headings, Morning Brief hero |
-| Body | DM Sans | 400–600 | (default) | All UI text, labels, nav, descriptions |
+| Body & Headings | DM Sans | 400–700 | (default) | All UI text, labels, nav, headings, descriptions |
 | Data | Geist Mono | 400–600 | `font-data` | Dollar amounts, bushel counts, percentages, timestamps |
+| Display (available) | Plus Jakarta Sans | 600–800 | `font-display` | Available via `.font-display` class but not currently used |
 
-**Loading:** Plus Jakarta Sans + DM Sans via Google Fonts (`index.html`). Geist Mono via jsDelivr CDN (`index.css` `@font-face`).
+**Loading:** DM Sans + Plus Jakarta Sans via Google Fonts (`index.html`). Geist Mono via jsDelivr CDN (`index.css` `@font-face`).
 
 **`font-data` applies `font-variant-numeric: tabular-nums`** — columns of numbers align correctly without explicit `tabular-nums` everywhere.
 
@@ -34,7 +34,7 @@ Three-font stack. Each font has a defined role — do not mix roles.
 
 | Role | Classes | Example |
 |------|---------|---------|
-| Page / module title | `font-display text-2xl font-bold` | "Morning Brief" |
+| Page / module title | `text-2xl font-bold` | "Morning Brief" |
 | Hero KPI value | `font-data text-3xl font-bold` | "$2.4M" |
 | Section heading | `text-lg font-semibold` | "Corn — Net Position" |
 | Card label | `text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]` | "UNPRICED EXPOSURE" |
