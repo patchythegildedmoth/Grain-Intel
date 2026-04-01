@@ -96,11 +96,14 @@ export function WeatherDashboard({ onNavigate }: WeatherDashboardProps) {
     return null;
   }, [selectedLocation, forecasts, forecastList]);
 
-  // Avg 7-day precip across all locations
-  const avgPrecip = useMemo(() => {
-    if (forecastList.length === 0) return 0;
-    const total = forecastList.reduce((sum, f) => sum + f.daily.reduce((s, d) => s + d.precipMm, 0), 0);
-    return total / forecastList.length;
+  // Avg 7-day precip across PA locations only (lat ~39.7-42.3, lon ~-80.5 to -74.7)
+  const avgPrecipPA = useMemo(() => {
+    const paForecasts = forecastList.filter(
+      (f) => f.lat >= 39.7 && f.lat <= 42.3 && f.lon >= -80.5 && f.lon <= -74.7,
+    );
+    if (paForecasts.length === 0) return null;
+    const total = paForecasts.reduce((sum, f) => sum + f.daily.reduce((s, d) => s + d.precipMm, 0), 0);
+    return total / paForecasts.length;
   }, [forecastList]);
 
   const droughtCount = useMemo(() => risks.filter((r) => r.event === 'drought').length, [risks]);
@@ -188,8 +191,8 @@ export function WeatherDashboard({ onNavigate }: WeatherDashboardProps) {
           value={String(morningBriefCard.locationsMonitored)}
         />
         <StatCard
-          label="Avg 7-Day Precip"
-          value={`${avgPrecip.toFixed(1)} mm`}
+          label="Avg 7-Day Precip (PA)"
+          value={avgPrecipPA !== null ? `${avgPrecipPA.toFixed(1)} mm` : 'No PA data'}
         />
         <StatCard
           label="Drought Risks"
