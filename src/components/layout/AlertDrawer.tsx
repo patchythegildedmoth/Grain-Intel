@@ -123,7 +123,7 @@ export function AlertBellButton({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
-      className="relative p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-secondary)] dark:hover:text-[var(--text-muted)] hover:bg-[var(--bg-surface-raised)] transition-colors"
+      className="relative p-2 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-secondary)] dark:hover:text-[var(--text-muted)] hover:bg-[var(--bg-surface-raised)] transition-colors"
       title="Alerts"
     >
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
