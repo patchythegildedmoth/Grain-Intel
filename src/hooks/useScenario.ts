@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
 import { useContractStore } from '../store/useContractStore';
+import { useMarketDataStore } from '../store/useMarketDataStore';
 import { sortByCommodityOrder } from '../utils/commodityColors';
+import { adjustBasisForFreight } from '../utils/freightTiers';
 
 export interface ScenarioImpact {
   commodity: string;
@@ -35,6 +37,7 @@ export interface CommodityScenario {
 
 export function useScenario(scenarioPrices: Record<string, number>, scenarioBasis: Record<string, number>) {
   const contracts = useContractStore((s) => s.contracts);
+  const freightTiers = useMarketDataStore((s) => s.current.freightTiers);
 
   return useMemo(() => {
     const openContracts = contracts.filter((c) => c.isOpen);
@@ -67,15 +70,16 @@ export function useScenario(scenarioPrices: Record<string, number>, scenarioBasi
       currentAvgFutures.set(commodity, entry && entry.weight > 0 ? entry.sum / entry.weight : null);
     }
 
-    // Compute current avg basis per commodity
+    // Compute current avg basis per commodity (freight-adjusted to delivered-equivalent)
     const currentBasisMap = new Map<string, { sum: number; weight: number }>();
     for (const c of openContracts) {
-      if (c.basis !== null && c.basis !== undefined && c.balance > 0) {
+      const adjBasis = adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers);
+      if (adjBasis !== null && adjBasis !== undefined && c.balance > 0) {
         if (!currentBasisMap.has(c.commodityCode)) {
           currentBasisMap.set(c.commodityCode, { sum: 0, weight: 0 });
         }
         const entry = currentBasisMap.get(c.commodityCode)!;
-        entry.sum += c.basis * c.balance;
+        entry.sum += adjBasis * c.balance;
         entry.weight += c.balance;
       }
     }
@@ -206,5 +210,5 @@ export function useScenario(scenarioPrices: Record<string, number>, scenarioBasi
     const totalPnl = scenarios.reduce((s, sc) => s + sc.totalPnl, 0);
 
     return { scenarios, totalPnl, commodities };
-  }, [contracts, scenarioPrices, scenarioBasis]);
+  }, [contracts, scenarioPrices, scenarioBasis, freightTiers]);
 }

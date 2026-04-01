@@ -6,6 +6,7 @@ import { calcCarrySpread, calcDailyCarryCost, calcPerPennyBasisRisk } from '../u
 import type { CarrySpread } from '../utils/carryCalc';
 import { getDeliveryMonth } from '../utils/futureMonth';
 import { sortByCommodityOrder } from '../utils/commodityColors';
+import { adjustBasisForFreight } from '../utils/freightTiers';
 
 export interface BasisContractDetail {
   contractNumber: string;
@@ -59,7 +60,7 @@ export interface PriceLaterAlert {
 
 export function usePriceLaterExposure() {
   const contracts = useContractStore((s) => s.contracts);
-  const { settlements, sellBasis } = useMarketDataStore((s) => s.current);
+  const { settlements, sellBasis, freightTiers } = useMarketDataStore((s) => s.current);
   const hasMarketData = useMarketDataStore((s) => s.lastUpdated !== null);
 
   return useMemo(() => {
@@ -150,7 +151,9 @@ export function usePriceLaterExposure() {
             unpricedBushels: unpricedBu,
             currentFuturesPrice: currentFutures,
             currentMarketCashValue:
-              currentFutures !== null && c.basis !== null ? currentFutures + c.basis : null,
+              currentFutures !== null && c.basis !== null
+                ? currentFutures + adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers)!
+                : null,
             daysUntilEnd: c.daysUntilDeliveryEnd,
             isOverdue: c.isOverdue,
             isUrgent: c.isUrgent,
@@ -255,5 +258,5 @@ export function usePriceLaterExposure() {
       totalHTABushels,
       hasMarketData,
     };
-  }, [contracts, settlements, sellBasis, hasMarketData]);
+  }, [contracts, settlements, sellBasis, freightTiers, hasMarketData]);
 }

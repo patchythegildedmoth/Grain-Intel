@@ -8,6 +8,7 @@ import { groupBy } from './groupBy';
 import { getDeliveryMonth } from './futureMonth';
 import { sortByCommodityOrder } from './commodityColors';
 import { weightedAverage } from './weightedAverage';
+import { adjustBasisForFreight } from './freightTiers';
 import type { ContractM2M, MarketLookups } from './resolveContractM2M';
 
 export interface FuturesMonthM2M {
@@ -140,12 +141,18 @@ export function aggregateM2M(
         const avgBuy = weightedAverage(
           fmGroup
             .filter((cm) => cm.contract.contractType === 'Purchase' && cm.contract.basis !== null)
-            .map((cm) => ({ value: cm.contract.basis, weight: cm.contract.balance })),
+            .map((cm) => ({
+              value: adjustBasisForFreight(cm.contract.basis, cm.contract.contractNumber, cm.contract.freightTier, lookups.freightTiers),
+              weight: cm.contract.balance,
+            })),
         );
         const avgSell = weightedAverage(
           fmGroup
             .filter((cm) => cm.contract.contractType === 'Sale' && cm.contract.basis !== null)
-            .map((cm) => ({ value: cm.contract.basis, weight: cm.contract.balance })),
+            .map((cm) => ({
+              value: adjustBasisForFreight(cm.contract.basis, cm.contract.contractNumber, cm.contract.freightTier, lookups.freightTiers),
+              weight: cm.contract.balance,
+            })),
         );
 
         const firstContract = fmGroup[0];

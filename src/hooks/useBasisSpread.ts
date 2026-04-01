@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { useContractStore } from '../store/useContractStore';
+import { useMarketDataStore } from '../store/useMarketDataStore';
 import { weightedAverage } from '../utils/weightedAverage';
 import { sortByCommodityOrder } from '../utils/commodityColors';
+import { adjustBasisForFreight } from '../utils/freightTiers';
 import { THRESHOLDS } from '../utils/alerts';
 import type { AlertLevel } from '../utils/alerts';
 import { computeFreightBreakdown, type FreightBasisBreakdown } from '../utils/freightBreakdown';
@@ -56,8 +58,12 @@ export interface CommoditySpreadSummary {
 
 export function useBasisSpread() {
   const contracts = useContractStore((s) => s.contracts);
+  const freightTiers = useMarketDataStore((s) => s.current.freightTiers);
 
   return useMemo(() => {
+    const adjBasis = (c: { basis: number | null; contractNumber: string; freightTier: string | null }) =>
+      adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers);
+
     const openContracts = contracts.filter((c) => c.isOpen);
     const completedContracts = contracts.filter((c) => c.isCompleted);
 
@@ -75,8 +81,8 @@ export function useBasisSpread() {
       const purchases = group.filter((c) => c.contractType === 'Purchase');
       const sales = group.filter((c) => c.contractType === 'Sale');
 
-      const avgBuyBasis = weightedAverage(purchases.map((c) => ({ value: c.basis, weight: c.pricedQty })));
-      const avgSellBasis = weightedAverage(sales.map((c) => ({ value: c.basis, weight: c.pricedQty })));
+      const avgBuyBasis = weightedAverage(purchases.map((c) => ({ value: adjBasis(c), weight: c.pricedQty })));
+      const avgSellBasis = weightedAverage(sales.map((c) => ({ value: adjBasis(c), weight: c.pricedQty })));
 
       const row: SpreadRow = {
         commodity,
@@ -111,8 +117,8 @@ export function useBasisSpread() {
       const purchases = group.filter((c) => c.contractType === 'Purchase');
       const sales = group.filter((c) => c.contractType === 'Sale');
 
-      const avgBuyBasis = weightedAverage(purchases.map((c) => ({ value: c.basis, weight: c.pricedQty })));
-      const avgSellBasis = weightedAverage(sales.map((c) => ({ value: c.basis, weight: c.pricedQty })));
+      const avgBuyBasis = weightedAverage(purchases.map((c) => ({ value: adjBasis(c), weight: c.pricedQty })));
+      const avgSellBasis = weightedAverage(sales.map((c) => ({ value: adjBasis(c), weight: c.pricedQty })));
 
       const entry: HistoricalSpread = {
         commodity,
@@ -154,8 +160,8 @@ export function useBasisSpread() {
       const purchases = group.filter((c) => c.contractType === 'Purchase');
       const sales = group.filter((c) => c.contractType === 'Sale');
 
-      const avgBuyBasis = weightedAverage(purchases.map((c) => ({ value: c.basis, weight: c.pricedQty })));
-      const avgSellBasis = weightedAverage(sales.map((c) => ({ value: c.basis, weight: c.pricedQty })));
+      const avgBuyBasis = weightedAverage(purchases.map((c) => ({ value: adjBasis(c), weight: c.pricedQty })));
+      const avgSellBasis = weightedAverage(sales.map((c) => ({ value: adjBasis(c), weight: c.pricedQty })));
 
       const trend: MonthlyTrend = {
         monthKey,
@@ -191,8 +197,8 @@ export function useBasisSpread() {
       // Overall weighted avg for current book
       const allOpenPurchases = openContracts.filter((c) => c.commodityCode === commodity && c.contractType === 'Purchase');
       const allOpenSales = openContracts.filter((c) => c.commodityCode === commodity && c.contractType === 'Sale');
-      const overallAvgBuyBasis = weightedAverage(allOpenPurchases.map((c) => ({ value: c.basis, weight: c.pricedQty })));
-      const overallAvgSellBasis = weightedAverage(allOpenSales.map((c) => ({ value: c.basis, weight: c.pricedQty })));
+      const overallAvgBuyBasis = weightedAverage(allOpenPurchases.map((c) => ({ value: adjBasis(c), weight: c.pricedQty })));
+      const overallAvgSellBasis = weightedAverage(allOpenSales.map((c) => ({ value: adjBasis(c), weight: c.pricedQty })));
       const overallSpread = overallAvgBuyBasis !== null && overallAvgSellBasis !== null
         ? overallAvgSellBasis - overallAvgBuyBasis : null;
 
@@ -244,5 +250,5 @@ export function useBasisSpread() {
     });
 
     return { summaries };
-  }, [contracts]);
+  }, [contracts, freightTiers]);
 }

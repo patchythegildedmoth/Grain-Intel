@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "grain-intel",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeExecutable": "/usr/local/bin/node",
+      "runtimeArgs": ["/Users/stevendowd/Library/CloudStorage/OneDrive-AgSourceLLC/Stevie/Ag Source/Claude/Grain Trading Module/grain-intel/node_modules/vite/bin/vite.js", "--host", "localhost"],
       "port": 5173
     }
   ]

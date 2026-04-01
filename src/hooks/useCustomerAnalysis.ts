@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useContractStore } from '../store/useContractStore';
 import { useMarketDataStore } from '../store/useMarketDataStore';
 import { weightedAverage } from '../utils/weightedAverage';
-import { getFreightCost } from '../utils/freightTiers';
+import { adjustBasisForFreight } from '../utils/freightTiers';
 import { THRESHOLDS } from '../utils/alerts';
 import type { AlertLevel } from '../utils/alerts';
 
@@ -142,7 +142,10 @@ export function useCustomerAnalysis() {
     for (const c of completedContracts) commoditiesInCompleted.add(c.commodityCode);
     for (const commodity of commoditiesInCompleted) {
       const purchases = completedContracts.filter((c) => c.commodityCode === commodity && c.contractType === 'Purchase');
-      marketAvgBuyBasis.set(commodity, weightedAverage(purchases.map((c) => ({ value: c.basis, weight: c.pricedQty }))));
+      marketAvgBuyBasis.set(commodity, weightedAverage(purchases.map((c) => ({
+        value: adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers),
+        weight: c.pricedQty,
+      }))));
     }
 
     // Per-entity sell basis
@@ -158,12 +161,10 @@ export function useCustomerAnalysis() {
         // Adjust sell basis for freight: FOB/Pickup contracts have a tier assigned.
         // The contract's locked basis is the FOB price (lower than delivered). Adding back
         // the freight cost gives the true realized margin vs. a delivered buy basis.
-        const avgSellBasis = weightedAverage(sales.map((c) => {
-          const tier = freightTiers?.[c.contractNumber] ?? c.freightTier ?? null;
-          const freightCost = getFreightCost(tier);
-          const effectiveBasis = c.basis !== null && freightCost > 0 ? c.basis + freightCost : c.basis;
-          return { value: effectiveBasis, weight: c.pricedQty };
-        }));
+        const avgSellBasis = weightedAverage(sales.map((c) => ({
+          value: adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers),
+          weight: c.pricedQty,
+        })));
         const completedBushels = sales.reduce((s, c) => s + c.pricedQty, 0);
 
         // Weighted market buy basis across commodities this customer sold

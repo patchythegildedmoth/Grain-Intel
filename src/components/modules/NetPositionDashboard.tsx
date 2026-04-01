@@ -36,11 +36,11 @@ const columns = [
     },
   }),
   col.accessor('avgBuyBasisLocked', {
-    header: 'Buy Basis (Locked)',
+    header: 'Buy Basis (Locked, dlvd equiv)',
     cell: (info) => formatBasis(info.getValue()),
   }),
   col.accessor('avgSellBasisLocked', {
-    header: 'Sell Basis (Locked)',
+    header: 'Sell Basis (Locked, dlvd equiv)',
     cell: (info) => formatBasis(info.getValue()),
   }),
   col.accessor('grossSpreadLocked', {
@@ -57,11 +57,11 @@ const columns = [
     },
   }),
   col.accessor('avgBuyBasisPosition', {
-    header: 'Buy Basis (Position)',
+    header: 'Buy Basis (Position, dlvd equiv)',
     cell: (info) => formatBasis(info.getValue()),
   }),
   col.accessor('avgSellBasisPosition', {
-    header: 'Sell Basis (Position)',
+    header: 'Sell Basis (Position, dlvd equiv)',
     cell: (info) => formatBasis(info.getValue()),
   }),
   col.accessor('contractCount', { header: '# Contracts' }),

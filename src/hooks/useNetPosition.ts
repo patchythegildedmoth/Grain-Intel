@@ -1,7 +1,9 @@
 import { useMemo } from 'react';
 import { useContractStore } from '../store/useContractStore';
+import { useMarketDataStore } from '../store/useMarketDataStore';
 import { weightedAverage } from '../utils/weightedAverage';
 import { sortByCommodityOrder } from '../utils/commodityColors';
+import { adjustBasisForFreight } from '../utils/freightTiers';
 
 export interface PositionRow {
   commodity: string;
@@ -33,8 +35,12 @@ export interface CommoditySummary {
 export function useNetPosition() {
   const contracts = useContractStore((s) => s.contracts);
   const previousSnapshot = useContractStore((s) => s.previousSnapshot);
+  const freightTiers = useMarketDataStore((s) => s.current.freightTiers);
 
   return useMemo(() => {
+    const adjBasis = (c: { basis: number | null; contractNumber: string; freightTier: string | null }) =>
+      adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers);
+
     const openContracts = contracts.filter((c) => c.isOpen);
 
     // Group by commodity + futureMonthSortKey
@@ -63,10 +69,10 @@ export function useNetPosition() {
         longBushels,
         shortBushels,
         netBushels: longBushels - shortBushels,
-        avgBuyBasisLocked: weightedAverage(purchases.map((c) => ({ value: c.basis, weight: c.pricedQty }))),
-        avgSellBasisLocked: weightedAverage(sales.map((c) => ({ value: c.basis, weight: c.pricedQty }))),
-        avgBuyBasisPosition: weightedAverage(purchases.map((c) => ({ value: c.basis, weight: c.balance }))),
-        avgSellBasisPosition: weightedAverage(sales.map((c) => ({ value: c.basis, weight: c.balance }))),
+        avgBuyBasisLocked: weightedAverage(purchases.map((c) => ({ value: adjBasis(c), weight: c.pricedQty }))),
+        avgSellBasisLocked: weightedAverage(sales.map((c) => ({ value: adjBasis(c), weight: c.pricedQty }))),
+        avgBuyBasisPosition: weightedAverage(purchases.map((c) => ({ value: adjBasis(c), weight: c.balance }))),
+        avgSellBasisPosition: weightedAverage(sales.map((c) => ({ value: adjBasis(c), weight: c.balance }))),
         grossSpreadLocked: null,
         grossSpreadPosition: null,
         avgBuyFutures: weightedAverage(purchases.map((c) => ({ value: c.futures, weight: c.pricedQty }))),
@@ -118,5 +124,5 @@ export function useNetPosition() {
     }
 
     return { summaries, deltas, openContractCount: openContracts.length };
-  }, [contracts, previousSnapshot]);
+  }, [contracts, previousSnapshot, freightTiers]);
 }

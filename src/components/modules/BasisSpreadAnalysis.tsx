@@ -27,7 +27,7 @@ const spreadCol = createColumnHelper<SpreadRow>();
 const spreadColumns = [
   spreadCol.accessor('futureMonthShort', { header: 'Futures Month' }),
   spreadCol.accessor('avgBuyBasis', {
-    header: 'Avg Buy Basis',
+    header: 'Avg Buy Basis (dlvd equiv)',
     cell: (info) => {
       const row = info.row.original;
       return (
@@ -39,7 +39,7 @@ const spreadColumns = [
     },
   }),
   spreadCol.accessor('avgSellBasis', {
-    header: 'Avg Sell Basis',
+    header: 'Avg Sell Basis (dlvd equiv)',
     cell: (info) => {
       const row = info.row.original;
       return (
@@ -109,7 +109,7 @@ const histCol = createColumnHelper<HistoricalSpread>();
 const histColumns = [
   histCol.accessor('year', { header: 'Year' }),
   histCol.accessor('avgBuyBasis', {
-    header: 'Avg Buy Basis',
+    header: 'Avg Buy Basis (dlvd equiv)',
     cell: (info) => {
       const row = info.row.original;
       return (
@@ -121,7 +121,7 @@ const histColumns = [
     },
   }),
   histCol.accessor('avgSellBasis', {
-    header: 'Avg Sell Basis',
+    header: 'Avg Sell Basis (dlvd equiv)',
     cell: (info) => {
       const row = info.row.original;
       return (
