@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { createColumnHelper } from '@tanstack/react-table';
 import { useCustomerAnalysis, type CustomerSummary, type CustomerProfitability } from '../../hooks/useCustomerAnalysis';
 import { DataTable } from '../shared/DataTable';
 import { StatCard } from '../shared/StatCard';
 import { AlertBadge } from '../shared/AlertBadge';
+import { SegmentedControl } from '../shared/SegmentedControl';
 import { formatBushelsShort, formatPercent, formatCurrency } from '../../utils/formatters';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
@@ -95,8 +96,14 @@ const profitColumns = [
   profitCol.accessor('contractCount', { header: '# Sales' }),
 ];
 
+const TABS = [
+  { key: 'concentration', label: 'Concentration' },
+  { key: 'profitability', label: 'Profitability' },
+];
+
 export function CustomerConcentration() {
   const { customerSummaries, profitability, top10, othersTotal, totalOpenBushels, uniqueEntities } = useCustomerAnalysis();
+  const [activeTab, setActiveTab] = useState('concentration');
 
   const donutData = useMemo(() => {
     const data = top10.map((cs) => ({
@@ -113,74 +120,115 @@ export function CustomerConcentration() {
     cs.alerts.some((a) => a.level === 'warning' || a.level === 'critical')
   ).length;
 
+  const avgMargin = useMemo(() => {
+    const withMargin = profitability.filter((p) => p.approxMargin !== null);
+    if (withMargin.length === 0) return null;
+    const totalBu = withMargin.reduce((s, p) => s + p.completedBushels, 0);
+    return totalBu > 0
+      ? withMargin.reduce((s, p) => s + p.approxMargin! * p.completedBushels, 0) / totalBu
+      : null;
+  }, [profitability]);
+
   return (
     <div className="p-6 space-y-6">
-      <h2 className="text-2xl font-bold">Customer Concentration & Profitability</h2>
-
-      {/* Summary cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Unique Entities" value={String(uniqueEntities)} />
-        <StatCard label="Total Volume" value={formatBushelsShort(totalOpenBushels)} />
-        <StatCard
-          label="Top Customer %"
-          value={customerSummaries.length > 0 ? formatPercent(customerSummaries[0].percentOfTotal) : '—'}
-        />
-        <StatCard
-          label="Concentration Alerts"
-          value={String(concentrationAlerts)}
-          colorClass={concentrationAlerts > 0 ? 'border-amber-300 dark:border-amber-700' : ''}
-        />
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Customers</h2>
+        <SegmentedControl segments={TABS} activeKey={activeTab} onChange={setActiveTab} />
       </div>
 
-      {/* Donut chart */}
-      {donutData.length > 0 && (
-        <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
-          <h3 className="text-lg font-semibold mb-3">Top 10 Customers by Volume</h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <PieChart>
-              <Pie
-                data={donutData}
-                dataKey="value"
-                nameKey="name"
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={120}
-                paddingAngle={2}
-              >
-                {donutData.map((_, i) => (
-                  <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
-                ))}
-              </Pie>
-              <Tooltip formatter={(value: number) => formatBushelsShort(value)} />
-              <Legend />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
+      {activeTab === 'concentration' && (
+        <>
+          {/* Concentration stat cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Unique Entities" value={String(uniqueEntities)} />
+            <StatCard label="Total Volume" value={formatBushelsShort(totalOpenBushels)} />
+            <StatCard
+              label="Top Customer %"
+              value={customerSummaries.length > 0 ? formatPercent(customerSummaries[0].percentOfTotal) : '—'}
+            />
+            <StatCard
+              label="Concentration Alerts"
+              value={String(concentrationAlerts)}
+              colorClass={concentrationAlerts > 0 ? 'border-amber-300 dark:border-amber-700' : ''}
+            />
+          </div>
+
+          {/* Donut chart */}
+          {donutData.length > 0 && (
+            <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
+              <h3 className="text-lg font-semibold mb-3">Top 10 Customers by Volume</h3>
+              <ResponsiveContainer width="100%" height={300}>
+                <PieChart>
+                  <Pie
+                    data={donutData}
+                    dataKey="value"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={120}
+                    paddingAngle={2}
+                  >
+                    {donutData.map((_, i) => (
+                      <Cell key={i} fill={DONUT_COLORS[i % DONUT_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value: number) => formatBushelsShort(value)} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Concentration table */}
+          <div>
+            <h3 className="text-lg font-semibold mb-2">Customer Concentration (Open Contracts)</h3>
+            <DataTable data={customerSummaries} columns={custColumns} />
+          </div>
+        </>
       )}
 
-      {/* Concentration table */}
-      <div>
-        <h3 className="text-lg font-semibold mb-2">Customer Concentration (Open Contracts)</h3>
-        <DataTable data={customerSummaries} columns={custColumns} />
-      </div>
-
-      {/* Profitability table */}
-      {profitability.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Customer Profitability (Completed Trades)</h3>
-          <p className="text-xs text-[var(--text-muted)] mb-2">
-            Approximate margin = Customer avg sell basis - Market avg buy basis
-          </p>
-          <DataTable data={profitability} columns={profitColumns} />
-          <div className="mt-3 bg-amber-50 dark:bg-amber-950 border border-amber-500/20 dark:border-amber-500/20 rounded-lg p-3">
-            <p className="text-sm text-[var(--warning)] dark:text-[var(--warning)]">
-              <span className="font-semibold">Note:</span> Margin estimates do not include freight costs.
-              Delivered customers may have lower true margins than shown.
-              Pickup and FOB customers may have higher true margins than shown.
-            </p>
+      {activeTab === 'profitability' && (
+        <>
+          {/* Profitability stat cards */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <StatCard label="Customers w/ History" value={String(profitability.length)} />
+            <StatCard
+              label="Avg Margin/Bu"
+              value={avgMargin !== null ? formatCurrency(avgMargin) : '—'}
+              colorClass={avgMargin !== null && avgMargin < 0 ? 'border-red-300 dark:border-red-700' : ''}
+            />
+            <StatCard
+              label="Negative Margin"
+              value={String(profitability.filter((p) => p.approxMargin !== null && p.approxMargin < 0).length)}
+              colorClass={profitability.some((p) => p.approxMargin !== null && p.approxMargin < 0) ? 'border-red-300 dark:border-red-700' : ''}
+            />
+            <StatCard
+              label="Completed Volume"
+              value={formatBushelsShort(profitability.reduce((s, p) => s + p.completedBushels, 0))}
+            />
           </div>
-        </div>
+
+          {profitability.length > 0 ? (
+            <>
+              <div>
+                <h3 className="text-lg font-semibold mb-1">Customer Profitability (Completed Trades)</h3>
+                <p className="text-xs text-[var(--text-muted)] mb-2">
+                  Margin = freight-adjusted avg sell basis − market avg buy basis. FOB/Pickup sell basis includes freight savings.
+                </p>
+                <DataTable data={profitability} columns={profitColumns} />
+              </div>
+              <div className="bg-amber-50 dark:bg-amber-950 border border-amber-500/20 dark:border-amber-500/20 rounded-lg p-3">
+                <p className="text-sm text-[var(--warning)]">
+                  <span className="font-semibold">Note:</span> FOB/Pickup margins are adjusted using freight tier data when available.
+                  Delivered customer margins do not deduct delivery freight costs (not tracked per-contract).
+                </p>
+              </div>
+            </>
+          ) : (
+            <p className="text-sm text-[var(--text-muted)]">No completed sale contracts in the current data set.</p>
+          )}
+        </>
       )}
     </div>
   );
