@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.2.0] - 2026-04-01
+
+### Fixed
+- **Customer profitability freight adjustment** — FOB/Pickup sale contracts now have freight cost added back to locked basis before computing margin, using the same tier lookup (`freightTiers[contractNumber] ?? contract.freightTier`) already used by Mark-to-Market; previously, FOB customers appeared artificially unprofitable because their lower FOB basis was compared directly against a delivered buy basis
+
+### Changed
+- **Customers page layout** — replaced single long-scroll page with a `SegmentedControl` (Concentration / Profitability tabs); Concentration tab has the volume donut chart and concentration table; Profitability tab has four summary stat cards (customers w/ history, avg margin/bu, negative margin count, completed volume) and the profitability table; page header shortened to "Customers"
+
 ## [1.2.1.1] - 2026-03-31
 
 ### Fixed
