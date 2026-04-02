@@ -196,10 +196,16 @@ export function useCustomerAnalysis() {
       return { primaryFreightTerm, freightMixLabel };
     };
 
-    // Group completed sales by entity → commodity
+    // Rolling 12-month filter for sales (consistent with buy side)
+    const recentSales = completedContracts.filter((c) =>
+      c.contractType === 'Sale' &&
+      c.endDate instanceof Date && !isNaN(c.endDate.getTime()) &&
+      c.endDate >= twelveMonthsAgo,
+    );
+
+    // Group recent sales by entity → commodity
     const entityCommoditySales = new Map<string, Map<string, typeof completedContracts>>();
-    for (const c of completedContracts) {
-      if (c.contractType !== 'Sale') continue;
+    for (const c of recentSales) {
       if (!entityCommoditySales.has(c.entity)) entityCommoditySales.set(c.entity, new Map());
       const commodityMap = entityCommoditySales.get(c.entity)!;
       if (!commodityMap.has(c.commodityCode)) commodityMap.set(c.commodityCode, []);
@@ -309,6 +315,15 @@ export function useCustomerAnalysis() {
     const top10 = customerSummaries.slice(0, 10);
     const othersTotal = customerSummaries.slice(10).reduce((s, c) => s + c.totalCommittedBushels, 0);
 
+    // Serialize median freight map for UI display
+    const medianFreightByCommodity: { commodity: string; medianFreight: number }[] = [];
+    for (const [commodity, cost] of defaultFreightByCommodity) {
+      if (cost > 0) {
+        medianFreightByCommodity.push({ commodity, medianFreight: cost });
+      }
+    }
+    medianFreightByCommodity.sort((a, b) => a.commodity.localeCompare(b.commodity));
+
     return {
       customerSummaries,
       profitability,
@@ -316,6 +331,7 @@ export function useCustomerAnalysis() {
       othersTotal,
       totalOpenBushels,
       uniqueEntities: customerSummaries.length,
+      medianFreightByCommodity,
     };
   }, [contracts, freightTiers]);
 }

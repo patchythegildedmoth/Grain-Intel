@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5.0] - 2026-04-02
+
+### Changed
+- **Sell basis now uses rolling 12-month window** — previously used all-time completed sales, now consistent with buy side; both buy and sell basis are 12-month rolling for apples-to-apples margin comparison
+- **Column header updated** — "Avg Sell Basis" → "Avg Sell (12mo)" to reflect the time window
+- **Updated profitability subtitle and note** — both now reference rolling 12 months for buy and sell
+
+### Added
+- **Median freight per commodity display** — FOB/Pickup Median Freight Estimate section shows the computed median $/bu for each commodity with known tiers, so traders can see exactly what freight value is being applied to untiered FOB contracts
+
 ## [1.2.4.0] - 2026-04-02
 
 ### Fixed

@@ -78,7 +78,7 @@ const profitColumns = [
     },
   }),
   profitCol.accessor('avgSellBasis', {
-    header: 'Avg Sell Basis',
+    header: 'Avg Sell (12mo)',
     cell: (info) => {
       const v = info.getValue();
       if (v === null) return '—';
@@ -109,10 +109,10 @@ const profitColumns = [
     header: 'Freight Term',
   }),
   profitCol.accessor('completedBushels', {
-    header: 'Completed (Bu)',
+    header: 'Completed (12mo)',
     cell: (info) => formatBushelsShort(info.getValue()),
   }),
-  profitCol.accessor('contractCount', { header: '# Sales' }),
+  profitCol.accessor('contractCount', { header: '# Sales (12mo)' }),
 ];
 
 const getSubRows = (row: CustomerProfitability) => row.subRows;
@@ -123,7 +123,7 @@ const TABS = [
 ];
 
 export function CustomerConcentration() {
-  const { customerSummaries, profitability, top10, othersTotal, totalOpenBushels, uniqueEntities } = useCustomerAnalysis();
+  const { customerSummaries, profitability, top10, othersTotal, totalOpenBushels, uniqueEntities, medianFreightByCommodity } = useCustomerAnalysis();
   const [activeTab, setActiveTab] = useState('concentration');
 
   const donutData = useMemo(() => {
@@ -235,14 +235,36 @@ export function CustomerConcentration() {
               <div>
                 <h3 className="text-lg font-semibold mb-1">Customer Profitability (Completed Trades)</h3>
                 <p className="text-xs text-[var(--text-muted)] mb-2">
-                  Rolling 12-month market avg buy, FOB freight-adjusted. Click entity rows to expand per-commodity detail.
+                  Rolling 12-month buy &amp; sell basis, FOB freight-adjusted. Click entity rows to expand per-commodity detail.
                 </p>
                 <DataTable data={profitability} columns={profitColumns} getSubRows={getSubRows} />
               </div>
+
+              {/* Median freight per commodity */}
+              {medianFreightByCommodity.length > 0 && (
+                <div className="bg-[var(--bg-surface)] rounded-lg border border-[var(--border-default)] p-4">
+                  <h4 className="text-sm font-semibold mb-2">FOB/Pickup Median Freight Estimate</h4>
+                  <p className="text-xs text-[var(--text-muted)] mb-3">
+                    Applied to FOB/Pickup contracts without an assigned freight tier. Computed from all contracts with known tiers.
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {medianFreightByCommodity.map(({ commodity, medianFreight }) => (
+                      <div
+                        key={commodity}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg-default)] border border-[var(--border-default)]"
+                      >
+                        <span className="text-sm font-medium">{commodity}</span>
+                        <span className="text-sm text-[var(--text-muted)]">${medianFreight.toFixed(2)}/bu</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div className="bg-amber-50 dark:bg-amber-950 border border-amber-500/20 dark:border-amber-500/20 rounded-lg p-3">
                 <p className="text-sm text-[var(--warning)]">
-                  <span className="font-semibold">Note:</span> Market avg buy uses rolling 12 months of completed purchases.
-                  FOB/Pickup contracts without a freight tier use median freight cost as an estimate.
+                  <span className="font-semibold">Note:</span> Both buy and sell basis use rolling 12 months of completed contracts.
+                  FOB/Pickup contracts without a freight tier use the median freight cost shown above as an estimate.
                 </p>
               </div>
             </>
