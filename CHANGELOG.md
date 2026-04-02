@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.4.0] - 2026-04-02
+
+### Fixed
+- **Customer profitability margin accuracy** — market avg buy basis now uses a rolling 12-month window instead of all-time, and FOB/Pickup purchases without a freight tier get median freight cost applied as a fallback; previously, stale 2020-era data and unadjusted FOB purchases inflated margins (e.g., Cargill showed $0.84/bu vs realistic ~$0.50)
+- **Organic filter no longer catches Milo/Barley** — the $3.00 organic threshold now only applies to Corn, Soybeans, and Wheat; Milo and Barley legitimately trade at high basis values
+
+### Added
+- **Per-commodity profitability** — Customer Profitability tab now breaks down margin by commodity with expandable entity rows; click an entity to see per-commodity avg sell basis, market avg buy, and margin
+- **Expandable rows in DataTable** — backward-compatible optional getSubRows prop for any table that needs drill-down rows
+- **Median freight estimation** — new computeMedianFreightCost() computes median $/bu from contracts with assigned tiers, used as fallback for completed FOB contracts that lost their tier assignment
+
 ## [1.2.3.0] - 2026-04-01
 
 ### Changed

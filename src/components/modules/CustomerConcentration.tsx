@@ -57,7 +57,26 @@ const custColumns = [
 
 const profitCol = createColumnHelper<CustomerProfitability>();
 const profitColumns = [
-  profitCol.accessor('entity', { header: 'Entity' }),
+  profitCol.accessor('entity', {
+    header: 'Entity',
+    cell: (info) => {
+      const isSubRow = info.row.depth > 0;
+      return isSubRow ? '' : info.getValue();
+    },
+  }),
+  profitCol.accessor('commodity', {
+    header: 'Commodity',
+    cell: (info) => {
+      const v = info.getValue();
+      if (v === null) {
+        // Summary row — show commodity count or single commodity
+        const subs = info.row.original.subRows;
+        if (!subs || subs.length === 0) return 'All';
+        return `${subs.length} commodities`;
+      }
+      return v;
+    },
+  }),
   profitCol.accessor('avgSellBasis', {
     header: 'Avg Sell Basis',
     cell: (info) => {
@@ -67,7 +86,7 @@ const profitColumns = [
     },
   }),
   profitCol.accessor('marketAvgBuyBasis', {
-    header: 'Market Avg Buy',
+    header: 'Mkt Avg Buy (12mo)',
     cell: (info) => {
       const v = info.getValue();
       if (v === null) return '—';
@@ -95,6 +114,8 @@ const profitColumns = [
   }),
   profitCol.accessor('contractCount', { header: '# Sales' }),
 ];
+
+const getSubRows = (row: CustomerProfitability) => row.subRows;
 
 const TABS = [
   { key: 'concentration', label: 'Concentration' },
@@ -214,14 +235,14 @@ export function CustomerConcentration() {
               <div>
                 <h3 className="text-lg font-semibold mb-1">Customer Profitability (Completed Trades)</h3>
                 <p className="text-xs text-[var(--text-muted)] mb-2">
-                  Margin = freight-adjusted avg sell basis − market avg buy basis. FOB/Pickup sell basis includes freight savings.
+                  Rolling 12-month market avg buy, FOB freight-adjusted. Click entity rows to expand per-commodity detail.
                 </p>
-                <DataTable data={profitability} columns={profitColumns} />
+                <DataTable data={profitability} columns={profitColumns} getSubRows={getSubRows} />
               </div>
               <div className="bg-amber-50 dark:bg-amber-950 border border-amber-500/20 dark:border-amber-500/20 rounded-lg p-3">
                 <p className="text-sm text-[var(--warning)]">
-                  <span className="font-semibold">Note:</span> FOB/Pickup margins are adjusted using freight tier data when available.
-                  Delivered customer margins do not deduct delivery freight costs (not tracked per-contract).
+                  <span className="font-semibold">Note:</span> Market avg buy uses rolling 12 months of completed purchases.
+                  FOB/Pickup contracts without a freight tier use median freight cost as an estimate.
                 </p>
               </div>
             </>
