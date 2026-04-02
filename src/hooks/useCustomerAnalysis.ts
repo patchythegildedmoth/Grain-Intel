@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { useContractStore } from '../store/useContractStore';
 import { useMarketDataStore } from '../store/useMarketDataStore';
 import { weightedAverage } from '../utils/weightedAverage';
-import { adjustBasisForFreight } from '../utils/freightTiers';
+import { adjustBasisForProfitability, computeMedianFreightCost } from '../utils/freightTiers';
 import { THRESHOLDS } from '../utils/alerts';
 import type { AlertLevel } from '../utils/alerts';
 
@@ -21,6 +21,7 @@ export interface CustomerRow {
 
 export interface CustomerProfitability {
   entity: string;
+  commodity: string | null;
   avgSellBasis: number | null;
   marketAvgBuyBasis: number | null;
   approxMargin: number | null;
@@ -28,6 +29,7 @@ export interface CustomerProfitability {
   contractCount: number;
   primaryFreightTerm: string;
   freightMixLabel: string;
+  subRows?: CustomerProfitability[];
 }
 
 export interface CustomerSummary {
@@ -135,93 +137,169 @@ export function useCustomerAnalysis() {
       }
     }
 
-    // --- Profitability: completed trades ---
-    // Market avg buy basis by commodity
+    // --- Profitability: completed trades (rolling 12 months, per-commodity) ---
+
+    // Compute median freight cost per commodity for FOB fallback
+    const commoditiesInAll = new Set<string>();
+    for (const c of contracts) commoditiesInAll.add(c.commodityCode);
+    const defaultFreightByCommodity = new Map<string, number>();
+    for (const commodity of commoditiesInAll) {
+      defaultFreightByCommodity.set(
+        commodity,
+        computeMedianFreightCost(commodity, contracts, freightTiers),
+      );
+    }
+
+    // Rolling 12-month window for market avg buy basis
+    const twelveMonthsAgo = new Date();
+    twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+    twelveMonthsAgo.setHours(0, 0, 0, 0);
+
+    const recentPurchases = completedContracts.filter((c) =>
+      c.contractType === 'Purchase' &&
+      c.endDate instanceof Date && !isNaN(c.endDate.getTime()) &&
+      c.endDate >= twelveMonthsAgo,
+    );
+
+    // Market avg buy basis by commodity (rolling 12 months, FOB-adjusted)
     const marketAvgBuyBasis = new Map<string, number | null>();
-    const commoditiesInCompleted = new Set<string>();
-    for (const c of completedContracts) commoditiesInCompleted.add(c.commodityCode);
-    for (const commodity of commoditiesInCompleted) {
-      const purchases = completedContracts.filter((c) => c.commodityCode === commodity && c.contractType === 'Purchase');
+    const commoditiesInRecent = new Set<string>();
+    for (const c of recentPurchases) commoditiesInRecent.add(c.commodityCode);
+    for (const commodity of commoditiesInRecent) {
+      const purchases = recentPurchases.filter((c) => c.commodityCode === commodity);
+      const defaultFreight = defaultFreightByCommodity.get(commodity) ?? 0;
       marketAvgBuyBasis.set(commodity, weightedAverage(purchases.map((c) => ({
-        value: adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers),
+        value: adjustBasisForProfitability(
+          c.basis, c.contractNumber, c.freightTier, freightTiers,
+          c.freightTerm, defaultFreight,
+        ),
         weight: c.pricedQty,
       }))));
     }
 
-    // Per-entity sell basis
-    const entitySales = new Map<string, typeof completedContracts>();
+    // Build freight term helper for a set of contracts
+    const buildFreightMix = (sales: typeof completedContracts) => {
+      const ftMap = new Map<string, number>();
+      for (const c of sales) {
+        const ft = c.freightTerm || 'Unknown';
+        ftMap.set(ft, (ftMap.get(ft) || 0) + c.pricedQty);
+      }
+      const ftEntries = [...ftMap.entries()].sort((a, b) => b[1] - a[1]);
+      const primaryFreightTerm = ftEntries.length > 0 ? ftEntries[0][0] : 'Unknown';
+      const totalFtBu = ftEntries.reduce((s, [, v]) => s + v, 0);
+      const topPercent = totalFtBu > 0 ? Math.round((ftEntries[0][1] / totalFtBu) * 100) : 0;
+      const freightMixLabel = ftEntries.length <= 1
+        ? primaryFreightTerm
+        : topPercent >= 80
+          ? `${primaryFreightTerm} (${topPercent}%)`
+          : ftEntries.slice(0, 2).map(([ft, bu]) => `${ft} ${Math.round((bu / totalFtBu) * 100)}%`).join(', ');
+      return { primaryFreightTerm, freightMixLabel };
+    };
+
+    // Group completed sales by entity → commodity
+    const entityCommoditySales = new Map<string, Map<string, typeof completedContracts>>();
     for (const c of completedContracts) {
       if (c.contractType !== 'Sale') continue;
-      if (!entitySales.has(c.entity)) entitySales.set(c.entity, []);
-      entitySales.get(c.entity)!.push(c);
+      if (!entityCommoditySales.has(c.entity)) entityCommoditySales.set(c.entity, new Map());
+      const commodityMap = entityCommoditySales.get(c.entity)!;
+      if (!commodityMap.has(c.commodityCode)) commodityMap.set(c.commodityCode, []);
+      commodityMap.get(c.commodityCode)!.push(c);
     }
 
-    const profitability: CustomerProfitability[] = [...entitySales.entries()]
-      .map(([entity, sales]) => {
-        // Adjust sell basis for freight: FOB/Pickup contracts have a tier assigned.
-        // The contract's locked basis is the FOB price (lower than delivered). Adding back
-        // the freight cost gives the true realized margin vs. a delivered buy basis.
-        const avgSellBasis = weightedAverage(sales.map((c) => ({
-          value: adjustBasisForFreight(c.basis, c.contractNumber, c.freightTier, freightTiers),
-          weight: c.pricedQty,
-        })));
-        const completedBushels = sales.reduce((s, c) => s + c.pricedQty, 0);
+    // Build per-entity profitability with per-commodity sub-rows
+    const profitability: CustomerProfitability[] = [...entityCommoditySales.entries()]
+      .map(([entity, commodityMap]) => {
+        const subRows: CustomerProfitability[] = [];
+        let entityWeightedSell = 0;
+        let entityWeightedBuy = 0;
+        let entityTotalWeight = 0;
+        let entityBushels = 0;
+        let entityContractCount = 0;
 
-        // Weighted market buy basis across commodities this customer sold
-        const commoditySales = new Map<string, number>();
-        for (const c of sales) {
-          commoditySales.set(c.commodityCode, (commoditySales.get(c.commodityCode) || 0) + c.pricedQty);
-        }
-        let weightedMarketBasis = 0;
-        let totalWeight = 0;
-        for (const [commodity, qty] of commoditySales) {
-          const mktBasis = marketAvgBuyBasis.get(commodity);
-          if (mktBasis !== null && mktBasis !== undefined) {
-            weightedMarketBasis += mktBasis * qty;
-            totalWeight += qty;
+        // All sales for this entity (for freight mix)
+        const allEntitySales: typeof completedContracts = [];
+        for (const sales of commodityMap.values()) allEntitySales.push(...sales);
+
+        for (const [commodity, sales] of commodityMap) {
+          const defaultFreight = defaultFreightByCommodity.get(commodity) ?? 0;
+
+          const avgSellBasis = weightedAverage(sales.map((c) => ({
+            value: adjustBasisForProfitability(
+              c.basis, c.contractNumber, c.freightTier, freightTiers,
+              c.freightTerm, defaultFreight,
+            ),
+            weight: c.pricedQty,
+          })));
+          const completedBushels = sales.reduce((s, c) => s + c.pricedQty, 0);
+          const mktBasis = marketAvgBuyBasis.get(commodity) ?? null;
+          const margin = avgSellBasis !== null && mktBasis !== null ? avgSellBasis - mktBasis : null;
+
+          const { primaryFreightTerm, freightMixLabel } = buildFreightMix(sales);
+
+          subRows.push({
+            entity,
+            commodity,
+            avgSellBasis,
+            marketAvgBuyBasis: mktBasis,
+            approxMargin: margin,
+            completedBushels,
+            contractCount: sales.length,
+            primaryFreightTerm,
+            freightMixLabel,
+          });
+
+          // Accumulate for entity summary
+          if (avgSellBasis !== null && completedBushels > 0) {
+            entityWeightedSell += avgSellBasis * completedBushels;
+            entityTotalWeight += completedBushels;
           }
+          if (mktBasis !== null && completedBushels > 0) {
+            entityWeightedBuy += mktBasis * completedBushels;
+          }
+          entityBushels += completedBushels;
+          entityContractCount += sales.length;
         }
-        const mktAvg = totalWeight > 0 ? weightedMarketBasis / totalWeight : null;
 
-        // Freight term mix for this customer's sales
-        const ftMap = new Map<string, number>();
-        for (const c of sales) {
-          const ft = c.freightTerm || 'Unknown';
-          ftMap.set(ft, (ftMap.get(ft) || 0) + c.pricedQty);
-        }
-        const ftEntries = [...ftMap.entries()].sort((a, b) => b[1] - a[1]);
-        const primaryFreightTerm = ftEntries.length > 0 ? ftEntries[0][0] : 'Unknown';
-        const totalFtBu = ftEntries.reduce((s, [, v]) => s + v, 0);
-        const topPercent = totalFtBu > 0 ? Math.round((ftEntries[0][1] / totalFtBu) * 100) : 0;
-        const freightMixLabel = ftEntries.length <= 1
-          ? primaryFreightTerm
-          : topPercent >= 80
-            ? `${primaryFreightTerm} (${topPercent}%)`
-            : ftEntries.slice(0, 2).map(([ft, bu]) => `${ft} ${Math.round((bu / totalFtBu) * 100)}%`).join(', ');
+        const entityAvgSell = entityTotalWeight > 0 ? entityWeightedSell / entityTotalWeight : null;
+        const entityAvgBuy = entityTotalWeight > 0 ? entityWeightedBuy / entityTotalWeight : null;
+        const entityMargin = entityAvgSell !== null && entityAvgBuy !== null ? entityAvgSell - entityAvgBuy : null;
+        const { primaryFreightTerm, freightMixLabel } = buildFreightMix(allEntitySales);
 
         return {
           entity,
-          avgSellBasis,
-          marketAvgBuyBasis: mktAvg,
-          approxMargin: avgSellBasis !== null && mktAvg !== null ? avgSellBasis - mktAvg : null,
-          completedBushels,
-          contractCount: sales.length,
+          commodity: null, // summary row
+          avgSellBasis: entityAvgSell,
+          marketAvgBuyBasis: entityAvgBuy,
+          approxMargin: entityMargin,
+          completedBushels: entityBushels,
+          contractCount: entityContractCount,
           primaryFreightTerm,
           freightMixLabel,
+          subRows: subRows.length > 1 ? subRows : undefined, // only expand if multiple commodities
         };
       })
       .sort((a, b) => b.completedBushels - a.completedBushels);
 
-    // Check profitability alerts
+    // Check profitability alerts (per-commodity)
     for (const p of profitability) {
-      if (p.approxMargin !== null && p.approxMargin < 0) {
-        const cs = customerSummaries.find((c) => c.entity === p.entity);
-        if (cs) {
-          cs.alerts.push({
-            level: 'warning',
-            message: `Negative historical spread: ${p.approxMargin.toFixed(4)}/bu`,
-          });
+      const cs = customerSummaries.find((c) => c.entity === p.entity);
+      if (!cs) continue;
+
+      // Check sub-rows for per-commodity alerts
+      if (p.subRows) {
+        for (const sub of p.subRows) {
+          if (sub.approxMargin !== null && sub.approxMargin < 0) {
+            cs.alerts.push({
+              level: 'warning',
+              message: `Negative ${sub.commodity} spread: ${sub.approxMargin.toFixed(4)}/bu`,
+            });
+          }
         }
+      } else if (p.approxMargin !== null && p.approxMargin < 0) {
+        cs.alerts.push({
+          level: 'warning',
+          message: `Negative historical spread: ${p.approxMargin.toFixed(4)}/bu`,
+        });
       }
     }
 
