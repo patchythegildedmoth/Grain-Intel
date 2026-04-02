@@ -55,3 +55,64 @@ export function normalizeFreightTier(tier: string | null | undefined): string | 
   const normalized = tier.toUpperCase().trim();
   return normalized in FREIGHT_TIERS ? normalized : null;
 }
+
+/**
+ * Compute the median freight cost for a commodity from the current freight tier map.
+ * Looks at all contracts for the given commodity that have a tier assigned, collects
+ * their $/bu costs, and returns the median. Returns 0 if no tiers exist.
+ */
+export function computeMedianFreightCost(
+  commodity: string,
+  contracts: { commodityCode: string; contractNumber: string; freightTier: string | null }[],
+  freightTiers: Record<string, string> | undefined,
+): number {
+  const costs: number[] = [];
+  for (const c of contracts) {
+    if (c.commodityCode !== commodity) continue;
+    const tier = freightTiers?.[c.contractNumber] ?? c.freightTier ?? null;
+    const cost = getFreightCost(tier);
+    if (cost > 0) costs.push(cost);
+  }
+  if (costs.length === 0) return 0;
+  costs.sort((a, b) => a - b);
+  const mid = Math.floor(costs.length / 2);
+  return costs.length % 2 === 0 ? (costs[mid - 1] + costs[mid]) / 2 : costs[mid];
+}
+
+/**
+ * Returns the freight-adjusted basis for profitability calculations.
+ * Like adjustBasisForFreight, but with a fallback: when no tier exists and the
+ * contract is FOB/Pickup, applies a default freight cost (typically the median
+ * from computeMedianFreightCost). This handles completed contracts that lost
+ * their tier assignment.
+ *
+ * Decision tree:
+ *   basis null? → return null
+ *   tier in freightTiers map? → return basis + getFreightCost(tier)
+ *   tier in contract column? → return basis + getFreightCost(tier)
+ *   freightTerm is FOB/Pickup? → return basis + defaultFreightCost
+ *   else → return basis (delivered, no adjustment)
+ */
+export function adjustBasisForProfitability(
+  basis: number | null,
+  contractNumber: string,
+  contractFreightTier: string | null | undefined,
+  freightTiers: Record<string, string> | undefined,
+  freightTerm: string | null | undefined,
+  defaultFreightCost: number,
+): number | null {
+  if (basis === null) return null;
+
+  // Try tier-based adjustment first (exact same as adjustBasisForFreight)
+  const tier = freightTiers?.[contractNumber] ?? contractFreightTier ?? null;
+  const freightCost = getFreightCost(tier);
+  if (freightCost > 0) return basis + freightCost;
+
+  // No tier found — check if FOB/Pickup and apply default
+  const ft = freightTerm?.trim() ?? '';
+  if ((ft === 'FOB' || ft === 'Pickup' || ft === 'Picked Up') && defaultFreightCost > 0) {
+    return basis + defaultFreightCost;
+  }
+
+  return basis;
+}
