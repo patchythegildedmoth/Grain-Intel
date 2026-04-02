@@ -248,13 +248,11 @@ export function useCustomerAnalysis() {
             freightMixLabel,
           });
 
-          // Accumulate for entity summary
-          if (avgSellBasis !== null && completedBushels > 0) {
+          // Accumulate for entity summary (only when both sell and buy exist)
+          if (avgSellBasis !== null && mktBasis !== null && completedBushels > 0) {
             entityWeightedSell += avgSellBasis * completedBushels;
-            entityTotalWeight += completedBushels;
-          }
-          if (mktBasis !== null && completedBushels > 0) {
             entityWeightedBuy += mktBasis * completedBushels;
+            entityTotalWeight += completedBushels;
           }
           entityBushels += completedBushels;
           entityContractCount += sales.length;
@@ -296,9 +294,13 @@ export function useCustomerAnalysis() {
           }
         }
       } else if (p.approxMargin !== null && p.approxMargin < 0) {
+        // Single-commodity entity — include commodity name from sales data
+        const commodities = entityCommoditySales.get(p.entity);
+        const singleCommodity = commodities?.size === 1 ? [...commodities.keys()][0] : null;
+        const label = singleCommodity ? `Negative ${singleCommodity} spread` : 'Negative historical spread';
         cs.alerts.push({
           level: 'warning',
-          message: `Negative historical spread: ${p.approxMargin.toFixed(4)}/bu`,
+          message: `${label}: ${p.approxMargin.toFixed(4)}/bu`,
         });
       }
     }
