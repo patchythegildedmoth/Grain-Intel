@@ -246,7 +246,7 @@ Sidebar groups: **main** (Morning Brief through Risk Profile), **market** (Daily
 
 ### Organic Filter
 
-Contracts with `basis >= 3.0` are excluded entirely. Organic/specialty grain trades at 3x+ conventional basis and operates in a separate market. The threshold is in `filterContracts.ts`. Organic count is tracked in validation for visibility.
+Contracts with `basis >= 3.0` are excluded for Corn, Soybeans, and Wheat only. Organic/specialty grain trades at 3x+ conventional basis and operates in a separate market. Other commodities (Milo, Barley, Oats, Soybean Meal, Cottonseed, Commodity Other) are exempt because they legitimately trade at high basis values. The threshold and commodity list are in `filterContracts.ts`. Organic count is tracked in validation for visibility.
 
 ### Contract Statuses
 
@@ -452,7 +452,7 @@ Defined in `src/utils/alerts.ts`:
 
 - **StatCard**: KPI metric. Props: `label, value, numericValue?, formatValue?, delta?, deltaDirection? ('up'|'down'|'neutral'), colorClass?, size? ('default'|'hero')`. Use `size="hero"` for the lead KPI on each screen (renders `text-3xl`). Pass `numericValue` + `formatValue` to enable AnimatedNumber count-up.
 - **AlertBadge**: Severity pill. Props: `level` (`critical`/`warning`/`info`/`ok`). NOT `severity`.
-- **DataTable**: TanStack Table wrapper with sorting, sticky headers, dark mode. Props: `data, columns, footerRow?, compact?`. `compact=true` uses `py-1.5` rows (36px) vs default `py-2` (44px). First column gets left accent border on row hover via CSS group pattern.
+- **DataTable**: TanStack Table wrapper with sorting, sticky headers, dark mode, optional expandable rows. Props: `data, columns, footerRow?, compact?, getSubRows?`. `compact=true` uses `py-1.5` rows (36px) vs default `py-2` (44px). First column gets left accent border on row hover via CSS group pattern. When `getSubRows` is provided, rows with sub-rows show expand/collapse toggle (▸/▾) and sub-rows render with inset background and indentation.
 - **AnimatedNumber**: Count-up span component. Props: `value, format, duration? (default 400ms), className?`. Uses cubic ease-out rAF loop. Respects `prefers-reduced-motion`. Guards against NaN values.
 - **SegmentedControl**: Tabbed view switcher. Props: `segments: { key, label }[], activeKey, onChange, size?`. WAI-ARIA `role="tablist"`. `no-print` class.
 - **AlertDrawer**: Slide-out panel from right. Props: `open, onClose, onNavigate`. Groups alerts by severity.
@@ -474,7 +474,7 @@ Used across all charts. Never repurpose for semantic meaning:
 - **No real-time quotes**: Yahoo Finance provides end-of-day only. Real-time requires a paid data provider (P3 TODO).
 - **No iRely API**: Data loaded via manual Excel export. API integration blocked by iRely access (P2 TODO).
 - **Expired contracts can't be marked**: Yahoo Finance doesn't return prices for expired futures months. Zero-price settlements are filtered to prevent fake P&L. Must enter manually for historical view.
-- **Organic threshold is hard-coded**: $3.00/bu in `filterContracts.ts`. If organic premiums change, this needs updating.
+- **Organic threshold is hard-coded**: $3.00/bu in `filterContracts.ts`, applied only to Corn/Soybeans/Wheat. If organic premiums change or new organic commodities emerge, this needs updating.
 - **Freight tiers are fixed-step, not per-route**: Tiers A-L map to fixed $/bu costs (10c increments). No freight table by origin/destination. Excel dropdowns not supported by free SheetJS — traders type the letter manually with a reference column for guidance.
 - **Single user**: No auth, no multi-user. State is per-browser via localStorage + IndexedDB.
 - **CBOT month codes assume standard expiration**: No handling for early exercise or delivery.
