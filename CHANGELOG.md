@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.5.1] - 2026-04-02
+
+### Fixed
+- **Single-commodity entity label** — profitability table showed "All" for entities trading only one commodity; now shows the actual commodity name (e.g., "Corn"); multi-commodity entities still expand to per-commodity breakdown
+
 ## [1.2.5.0] - 2026-04-02
 
 ### Changed
