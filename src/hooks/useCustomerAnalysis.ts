@@ -271,7 +271,7 @@ export function useCustomerAnalysis() {
 
         return {
           entity,
-          commodity: null, // summary row
+          commodity: subRows.length === 1 ? subRows[0].commodity : null, // single commodity shows name, multi shows null (expandable)
           avgSellBasis: entityAvgSell,
           marketAvgBuyBasis: entityAvgBuy,
           approxMargin: entityMargin,
