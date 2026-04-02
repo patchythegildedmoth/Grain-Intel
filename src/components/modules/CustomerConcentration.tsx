@@ -109,10 +109,10 @@ const profitColumns = [
     header: 'Freight Term',
   }),
   profitCol.accessor('completedBushels', {
-    header: 'Completed (Bu)',
+    header: 'Completed (12mo)',
     cell: (info) => formatBushelsShort(info.getValue()),
   }),
-  profitCol.accessor('contractCount', { header: '# Sales' }),
+  profitCol.accessor('contractCount', { header: '# Sales (12mo)' }),
 ];
 
 const getSubRows = (row: CustomerProfitability) => row.subRows;
