@@ -280,9 +280,17 @@ export function ThisWeekTab({ onTabChange }: ThisWeekTabProps) {
               </p>
             </div>
           ) : (
-            <p className="text-sm text-[var(--text-muted)]">
-              Visit the Weather tab to load forecasts for your entity locations.
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--text-muted)]">
+                No weather data yet.
+              </p>
+              <button
+                onClick={() => onTabChange('weather')}
+                className="text-xs px-3 py-1.5 rounded-lg bg-[var(--accent)] text-white hover:opacity-90"
+              >
+                Load Weather Data
+              </button>
+            </div>
           )}
           <p className="text-[10px] text-[var(--text-muted)] mt-3">As of {today}</p>
         </Panel>
@@ -336,9 +344,14 @@ export function ThisWeekTab({ onTabChange }: ThisWeekTabProps) {
         {/* Panel 3: Crop Progress */}
         <Panel title="Crop Progress — Corn" icon="🌱" tab="crop-progress" onTabChange={onTabChange}>
           {!nassApiKey ? (
-            <p className="text-sm text-[var(--text-muted)]">
-              Enter your USDA NASS API key in Daily Inputs to load crop condition data.
-            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--text-muted)]">
+                Needs a USDA NASS API key.
+              </p>
+              <p className="text-xs text-[var(--text-muted)]">
+                Add it in Market &rarr; Daily Inputs &rarr; API Settings
+              </p>
+            </div>
           ) : cropLoading ? (
             <div className="flex items-center gap-2 text-[var(--text-muted)] text-sm">
               <div className="w-4 h-4 border border-[var(--border-default)] border-t-[var(--accent)] rounded-full animate-spin" />

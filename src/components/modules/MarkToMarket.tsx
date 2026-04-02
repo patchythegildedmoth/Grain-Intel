@@ -23,6 +23,31 @@ const M2M_TABS = [
   { key: 'detail', label: 'Contract Detail' },
 ];
 
+function M2MAlerts({ alerts }: { alerts: { severity: string; message: string }[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const VISIBLE_COUNT = 3;
+  const visible = expanded ? alerts : alerts.slice(0, VISIBLE_COUNT);
+  const hiddenCount = alerts.length - VISIBLE_COUNT;
+
+  return (
+    <div className="space-y-1">
+      {visible.map((a, i) => (
+        <AlertBadge key={i} level={a.severity === 'red' ? 'critical' : a.severity === 'amber' ? 'warning' : 'info'}>
+          {a.message}
+        </AlertBadge>
+      ))}
+      {hiddenCount > 0 && (
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors px-2 py-1"
+        >
+          {expanded ? 'Show fewer alerts' : `Show ${hiddenCount} more alert${hiddenCount === 1 ? '' : 's'}`}
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void }) {
   const [activeTab, setActiveTab] = useState('executive');
   const [whatIfOpen, setWhatIfOpen] = useState(false);
@@ -133,15 +158,9 @@ export function MarkToMarket({ onNavigate }: { onNavigate?: (id: string) => void
         />
       </div>
 
-      {/* Alerts */}
+      {/* Alerts (collapsible when >3) */}
       {alerts.length > 0 && (
-        <div className="space-y-1">
-          {alerts.map((a, i) => (
-            <AlertBadge key={i} level={a.severity === 'red' ? 'critical' : a.severity === 'amber' ? 'warning' : 'info'}>
-              {a.message}
-            </AlertBadge>
-          ))}
-        </div>
+        <M2MAlerts alerts={alerts} />
       )}
 
       <SegmentedControl segments={M2M_TABS} activeKey={activeTab} onChange={setActiveTab} />

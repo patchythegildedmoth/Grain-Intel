@@ -116,6 +116,40 @@ const TIMELINE_TABS = [
   { key: 'next-month', label: 'Next Month' },
 ];
 
+function PastDueSection({ pastDueMonths }: { pastDueMonths: DeliveryMonthSummary[] }) {
+  const [expanded, setExpanded] = useState(false);
+  const VISIBLE_COUNT = 3;
+  // Show the most recent past-due months first (they have the largest volumes)
+  const sorted = [...pastDueMonths].reverse();
+  const visible = expanded ? sorted : sorted.slice(0, VISIBLE_COUNT);
+  const hiddenCount = sorted.length - VISIBLE_COUNT;
+
+  return (
+    <div className="bg-red-600/10 dark:bg-red-600/10 border border-red-600/20 dark:border-red-800 rounded-lg p-4">
+      <h4 className="font-semibold text-[var(--negative)] dark:text-[var(--negative)] mb-2">
+        Past-Due Deliveries ({pastDueMonths.length} months)
+      </h4>
+      <div className="space-y-2 text-sm">
+        {visible.map((m) => (
+          <div key={m.monthKey} className="flex items-center gap-2">
+            <AlertBadge level="critical">OVERDUE</AlertBadge>
+            <span className="font-medium">{m.monthLabel}:</span>
+            <span>{m.contracts.length} contracts, {formatBushelsShort(m.inboundBushels + m.outboundBushels)} bu total</span>
+          </div>
+        ))}
+        {hiddenCount > 0 && (
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--text-secondary)] transition-colors px-1 py-0.5"
+          >
+            {expanded ? 'Show fewer' : `Show ${hiddenCount} more past-due month${hiddenCount === 1 ? '' : 's'}`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function DeliveryTimeline() {
   const [activeTab, setActiveTab] = useState('overview');
   const {
@@ -184,18 +218,7 @@ export function DeliveryTimeline() {
 
       {/* Overview tab content */}
       {activeTab === 'overview' && pastDueMonths.length > 0 && (
-        <div className="bg-red-600/10 dark:bg-red-600/10 border border-red-600/20 dark:border-red-800 rounded-lg p-4">
-          <h4 className="font-semibold text-[var(--negative)] dark:text-[var(--negative)] mb-2">Past-Due Deliveries</h4>
-          <div className="space-y-2 text-sm">
-            {pastDueMonths.map((m) => (
-              <div key={m.monthKey} className="flex items-center gap-2">
-                <AlertBadge level="critical">OVERDUE</AlertBadge>
-                <span className="font-medium">{m.monthLabel}:</span>
-                <span>{m.contracts.length} contracts, {formatBushelsShort(m.inboundBushels + m.outboundBushels)} bu total</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        <PastDueSection pastDueMonths={pastDueMonths} />
       )}
 
       {activeTab === 'overview' && chartData.length > 0 && (

@@ -100,7 +100,7 @@ export function AppShell({
     <div className="flex flex-col h-screen bg-[var(--bg-base)] text-[var(--text-primary)]">
       {/* Top bar */}
       <header className="h-14 shrink-0 border-b border-[var(--border-default)] bg-[var(--bg-surface)] flex items-center px-4 gap-4 no-print">
-        <h1 className="text-lg font-bold text-[var(--text-primary)] whitespace-nowrap">
+        <h1 className="text-xl font-bold text-[var(--text-primary)] whitespace-nowrap">
           Ag Source <span className="text-[var(--accent)]">Grain Intelligence</span>
         </h1>
 
@@ -116,7 +116,7 @@ export function AppShell({
             )}
             <button
               onClick={() => { clearData(); onModuleChange('upload'); }}
-              className="text-xs px-2 py-1 rounded bg-[var(--bg-inset)] hover:bg-[var(--bg-surface-raised)]"
+              className="text-xs px-2.5 py-1.5 rounded bg-[var(--bg-inset)] hover:bg-[var(--bg-surface-raised)]"
             >
               Re-upload
             </button>
@@ -125,7 +125,7 @@ export function AppShell({
 
         <button
           onClick={() => setPaletteOpen(true)}
-          className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm text-[var(--text-muted)] bg-[var(--bg-inset)] hover:bg-[var(--bg-surface-raised)] transition-colors"
+          className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg text-sm text-[var(--text-muted)] bg-[var(--bg-inset)] hover:bg-[var(--bg-surface-raised)] transition-colors"
           title="Search (⌘K)"
         >
           <svg className="h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
@@ -171,7 +171,7 @@ export function AppShell({
       />
 
       {/* Footer */}
-      <footer className="h-7 shrink-0 border-t border-[var(--border-default)] bg-[var(--bg-surface)] flex items-center px-4 text-xs text-[var(--text-muted)] no-print">
+      <footer className="h-7 shrink-0 border-t border-[var(--border-default)] bg-[var(--bg-surface)] flex items-center px-4 text-xs text-[var(--text-secondary)] no-print">
         Grain Trading Intelligence Module v1.0.0 &middot; Ag Source LLC
       </footer>
 

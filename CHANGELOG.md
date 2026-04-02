@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.3.0] - 2026-04-01
+
+### Changed
+- **WCAG AA contrast fix** — footer text upgraded from `--text-muted` to `--text-secondary` for 4.5:1 contrast ratio on small text
+- **Touch target improvements** — header bell button, re-upload button, and Cmd+K search bar paddings increased to meet 36px minimum tap target
+- **Brand header bump** — "Ag Source Grain Intelligence" H1 increased from 18px to 20px for visual weight
+- **Collapsible alert lists** — Mark-to-Market alerts and Delivery Timeline past-due sections now show 3 items by default with a "Show more" toggle, reducing visual noise on data-heavy screens
+- **Improved empty states** — Weather and Crop Progress panels on Market Factors now show actionable buttons and navigation breadcrumbs instead of plain text
+- **DESIGN.md typography correction** — updated from "three-font stack" to "two-font stack" reflecting actual usage (DM Sans body + Geist Mono data)
+
 ## [1.2.2.0] - 2026-04-01
 
 ### Fixed
