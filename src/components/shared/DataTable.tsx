@@ -2,9 +2,11 @@ import {
   useReactTable,
   getCoreRowModel,
   getSortedRowModel,
+  getExpandedRowModel,
   flexRender,
   type ColumnDef,
   type SortingState,
+  type ExpandedState,
 } from '@tanstack/react-table';
 import { useState } from 'react';
 
@@ -15,18 +17,23 @@ interface DataTableProps<T> {
   footerRow?: Record<string, string | number>;
   /** Compact mode: 36px rows instead of 44px. Use for dense data views. */
   compact?: boolean;
+  /** Return sub-rows for expandable row support. Omit for flat tables. */
+  getSubRows?: (row: T) => T[] | undefined;
 }
 
-export function DataTable<T>({ data, columns, footerRow, compact = false }: DataTableProps<T>) {
+export function DataTable<T>({ data, columns, footerRow, compact = false, getSubRows }: DataTableProps<T>) {
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [expanded, setExpanded] = useState<ExpandedState>({});
 
   const table = useReactTable({
     data,
     columns,
-    state: { sorting },
+    state: { sorting, expanded },
     onSortingChange: setSorting,
+    onExpandedChange: setExpanded,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    ...(getSubRows ? { getSubRows, getExpandedRowModel: getExpandedRowModel() } : {}),
   });
 
   const cellPadding = compact ? 'py-1.5' : 'py-2';
@@ -54,22 +61,38 @@ export function DataTable<T>({ data, columns, footerRow, compact = false }: Data
           ))}
         </thead>
         <tbody className="divide-y divide-[var(--border-subtle)]">
-          {table.getRowModel().rows.map((row) => (
-            <tr key={row.id} className="group hover:bg-[var(--bg-surface-raised)]">
-              {row.getVisibleCells().map((cell, cellIdx) => (
-                <td
-                  key={cell.id}
-                  className={`px-3 ${cellPadding} text-[var(--text-secondary)] whitespace-nowrap ${
-                    cellIdx === 0
-                      ? 'border-l-2 border-transparent group-hover:border-[var(--accent)] transition-colors duration-100'
-                      : ''
-                  }`}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          ))}
+          {table.getRowModel().rows.map((row) => {
+            const isSubRow = row.depth > 0;
+            const canExpand = row.getCanExpand();
+
+            return (
+              <tr
+                key={row.id}
+                className={`group hover:bg-[var(--bg-surface-raised)] ${
+                  isSubRow ? 'bg-[var(--bg-inset)]/50' : ''
+                } ${canExpand ? 'cursor-pointer' : ''}`}
+                onClick={canExpand ? row.getToggleExpandedHandler() : undefined}
+              >
+                {row.getVisibleCells().map((cell, cellIdx) => (
+                  <td
+                    key={cell.id}
+                    className={`px-3 ${cellPadding} text-[var(--text-secondary)] whitespace-nowrap ${
+                      cellIdx === 0
+                        ? `border-l-2 ${isSubRow ? 'border-transparent pl-6' : 'border-transparent group-hover:border-[var(--accent)]'} transition-colors duration-100`
+                        : ''
+                    } ${isSubRow ? 'text-xs' : ''}`}
+                  >
+                    {cellIdx === 0 && canExpand && (
+                      <span className="inline-block w-4 mr-1 text-[var(--text-muted)]">
+                        {row.getIsExpanded() ? '▾' : '▸'}
+                      </span>
+                    )}
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                ))}
+              </tr>
+            );
+          })}
         </tbody>
         {footerRow && (
           <tfoot className="bg-[var(--bg-inset)] font-semibold">
